@@ -1,3 +1,8 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>복슬복슬 쿼카</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,6 +22,8 @@
     --font-display:'Gaegu','Comic Sans MS',cursive,sans-serif;
     --font-body:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;
   }
+
+  [hidden]{ display:none!important; }
 
   html,body{height:100%;}
   body{
@@ -373,6 +380,8 @@
   .share-copy-btn{ background:var(--accent); color:var(--paper); }
   .share-modal-close{ background:#eee3d0; color:var(--ink); }
 </style>
+</head>
+<body>
 
 <div class="stage-bg bg-start" id="stageBg"></div>
 
@@ -640,3 +649,5 @@
   render();
 })();
 </script>
+</body>
+</html>
