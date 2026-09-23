@@ -1,0 +1,642 @@
+<title>복슬복슬 쿼카</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --fur:#8b7355;
+    --fur-belly:#d8c6a4;
+    --fur-dark:#5c4a35;
+    --ear-inner:#e7a3a3;
+    --nose:#4a3728;
+    --blush:#ff9eb5;
+    --ink:#33251a;
+    --paper:#fff9f0;
+    --card-bg:#fffdf8;
+    --accent:#c1502e;
+    --font-display:'Gaegu','Comic Sans MS',cursive,sans-serif;
+    --font-body:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Malgun Gothic',sans-serif;
+  }
+
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    color:var(--ink);
+    background:#1b1330;
+    overflow:hidden;
+  }
+
+  .stage-bg{
+    position:fixed;
+    inset:0;
+    z-index:0;
+    transition:opacity .5s ease;
+  }
+  .stage-bg.stage-transition{opacity:.35;}
+
+  .bg-start{ background:linear-gradient(180deg,#efe7d8 0%,#ddcda9 100%); }
+  .bg-outback{ background:linear-gradient(180deg,#f4b56a 0%,#c1502e 55%,#7a2e12 100%); }
+  .bg-lake{ background:linear-gradient(180deg,#fbd6e6 0%,#f080b0 55%,#c24c86 100%); }
+  .bg-night{
+    background:
+      radial-gradient(1.5px 1.5px at 12% 22%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 28% 8%, #fff, transparent),
+      radial-gradient(1px 1px at 40% 30%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 55% 15%, #fff, transparent),
+      radial-gradient(1px 1px at 68% 35%, #fff, transparent),
+      radial-gradient(2px 2px at 80% 10%, #fff, transparent),
+      radial-gradient(1px 1px at 90% 28%, #fff, transparent),
+      radial-gradient(1.5px 1.5px at 20% 45%, #fff, transparent),
+      radial-gradient(1px 1px at 75% 48%, #fff, transparent),
+      linear-gradient(180deg,#101a3d 0%,#060b1f 100%);
+    background-repeat:no-repeat;
+  }
+  .bg-finale{ background:linear-gradient(180deg,#ffdba3 0%,#f5789b 45%,#5f3a86 100%); }
+
+  .app{
+    position:relative;
+    z-index:1;
+    display:flex;
+    flex-direction:column;
+    height:100%;
+    padding:16px;
+    padding-top:calc(16px + env(safe-area-inset-top,0px));
+    padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    box-sizing:border-box;
+    gap:12px;
+  }
+
+  .hud{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .badge{
+    display:flex;
+    align-items:baseline;
+    gap:6px;
+    background:rgba(255,253,248,.85);
+    padding:8px 14px;
+    border-radius:999px;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+  }
+  .badge-num{
+    font-family:var(--font-display);
+    font-size:22px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+    color:var(--accent);
+  }
+  .badge-label{ font-size:12px; color:var(--ink); opacity:.8; }
+  .stage-label{
+    font-family:var(--font-display);
+    font-size:15px;
+    font-weight:700;
+    color:var(--paper);
+    text-shadow:0 1px 4px rgba(0,0,0,.35);
+    text-align:right;
+    max-width:52%;
+  }
+
+  .stage-area{
+    position:relative;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    min-height:0;
+  }
+
+  .hint{
+    position:absolute;
+    top:6px;
+    font-family:var(--font-display);
+    font-size:16px;
+    color:var(--paper);
+    text-shadow:0 1px 4px rgba(0,0,0,.35);
+    text-align:center;
+    transition:opacity .4s ease;
+  }
+  .hint.hidden{ opacity:0; pointer-events:none; }
+
+  .quokka-wrap{
+    position:relative;
+    width:min(58vw,240px);
+    aspect-ratio:1/1;
+    background:none;
+    border:none;
+    padding:0;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .quokka-wrap:focus-visible{ outline:3px solid var(--paper); outline-offset:6px; border-radius:50%; }
+
+  .quokka{ width:100%; height:100%; display:block; transform-origin:50% 70%; }
+  .quokka.petted{ animation:squish .35s ease; }
+  .quokka.jump{ animation:jump .55s cubic-bezier(.34,1.56,.64,1); }
+  @keyframes squish{
+    0%{ transform:scale(1,1); }
+    35%{ transform:scale(1.08,.9); }
+    65%{ transform:scale(.95,1.05); }
+    100%{ transform:scale(1,1); }
+  }
+  @keyframes jump{
+    0%{ transform:translateY(0) scale(1,1); }
+    35%{ transform:translateY(-22px) scale(1.06,.94); }
+    65%{ transform:translateY(6px) scale(.96,1.06); }
+    100%{ transform:translateY(0) scale(1,1); }
+  }
+
+  .bubble{
+    position:absolute;
+    top:-14px;
+    left:50%;
+    transform:translate(-50%,-100%) scale(.8);
+    background:var(--card-bg);
+    color:var(--ink);
+    font-family:var(--font-display);
+    font-size:15px;
+    padding:8px 14px;
+    border-radius:14px;
+    white-space:nowrap;
+    box-shadow:0 3px 10px rgba(0,0,0,.18);
+    opacity:0;
+    transition:opacity .2s ease, transform .2s ease;
+    pointer-events:none;
+  }
+  .bubble::after{
+    content:"";
+    position:absolute;
+    bottom:-6px;
+    left:50%;
+    transform:translateX(-50%);
+    border:6px solid transparent;
+    border-top-color:var(--card-bg);
+  }
+  .bubble.show{ opacity:1; transform:translate(-50%,-110%) scale(1); }
+
+  .particle-layer{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    overflow:visible;
+  }
+  .particle{
+    position:absolute;
+    bottom:38%;
+    font-size:20px;
+    animation:float-up .9s ease-out forwards;
+  }
+  .particle.rare{ font-size:26px; }
+  @keyframes float-up{
+    0%{ transform:translate(0,0) scale(.6); opacity:0; }
+    15%{ opacity:1; }
+    100%{ transform:translate(var(--dx,0px),-90px) scale(1.1); opacity:0; }
+  }
+
+  .progress{
+    width:min(80vw,320px);
+    margin-top:18px;
+    text-align:center;
+  }
+  .progress-track{
+    width:100%;
+    height:8px;
+    border-radius:999px;
+    background:rgba(255,255,255,.35);
+    overflow:hidden;
+  }
+  .progress-fill{
+    height:100%;
+    width:0%;
+    background:var(--paper);
+    border-radius:999px;
+    transition:width .4s ease;
+  }
+  .progress-text{
+    margin-top:8px;
+    font-size:12.5px;
+    color:var(--paper);
+    text-shadow:0 1px 4px rgba(0,0,0,.35);
+  }
+
+  .hud-bottom{ display:flex; justify-content:center; }
+  .share-btn{
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:14.5px;
+    color:var(--ink);
+    background:var(--card-bg);
+    border:none;
+    padding:13px 22px;
+    border-radius:999px;
+    box-shadow:0 3px 10px rgba(0,0,0,.18);
+    cursor:pointer;
+  }
+  .share-btn:active{ transform:scale(.97); }
+
+  .toast{
+    position:fixed;
+    left:50%;
+    top:calc(18px + env(safe-area-inset-top,0px));
+    transform:translate(-50%,-140%);
+    background:var(--ink);
+    color:var(--paper);
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:999px;
+    z-index:5;
+    opacity:0;
+    transition:transform .35s ease, opacity .35s ease;
+    white-space:nowrap;
+  }
+  .toast.show{ transform:translate(-50%,0); opacity:1; }
+
+  .finale-overlay{
+    position:fixed;
+    inset:0;
+    z-index:10;
+    background:rgba(20,10,25,.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    box-sizing:border-box;
+  }
+  .finale-card{
+    background:var(--card-bg);
+    border-radius:22px;
+    padding:28px 24px;
+    max-width:340px;
+    width:100%;
+    text-align:center;
+    box-shadow:0 12px 30px rgba(0,0,0,.3);
+  }
+  .finale-card h2{
+    font-family:var(--font-display);
+    font-size:24px;
+    margin:0 0 10px;
+    color:var(--accent);
+  }
+  .finale-card p{
+    font-size:14px;
+    line-height:1.6;
+    color:var(--ink);
+    opacity:.85;
+    margin:0 0 20px;
+  }
+  .cta{
+    display:block;
+    text-decoration:none;
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:15px;
+    color:var(--paper);
+    background:var(--accent);
+    padding:14px;
+    border-radius:14px;
+    margin-bottom:10px;
+  }
+  .finale-close{
+    background:none;
+    border:none;
+    font-size:13px;
+    color:var(--ink);
+    opacity:.6;
+    text-decoration:underline;
+    cursor:pointer;
+    padding:6px;
+  }
+
+  .share-modal-overlay{
+    position:fixed;
+    inset:0;
+    z-index:11;
+    background:rgba(20,10,25,.55);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    box-sizing:border-box;
+  }
+  .share-modal{
+    background:var(--card-bg);
+    border-radius:20px;
+    padding:22px 20px;
+    max-width:360px;
+    width:100%;
+    box-sizing:border-box;
+    box-shadow:0 12px 30px rgba(0,0,0,.3);
+  }
+  .share-modal h3{
+    font-family:var(--font-display);
+    font-size:19px;
+    margin:0 0 6px;
+    color:var(--accent);
+  }
+  .share-modal-desc{
+    font-size:13px;
+    color:var(--ink);
+    opacity:.75;
+    margin:0 0 12px;
+  }
+  .share-textarea{
+    width:100%;
+    box-sizing:border-box;
+    font-family:var(--font-body);
+    font-size:13.5px;
+    color:var(--ink);
+    background:#faf3e6;
+    border:1px solid rgba(0,0,0,.12);
+    border-radius:12px;
+    padding:10px 12px;
+    resize:none;
+    margin-bottom:14px;
+  }
+  .share-modal-actions{
+    display:flex;
+    gap:8px;
+  }
+  .share-copy-btn, .share-modal-close{
+    flex:1;
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:14px;
+    padding:12px;
+    border-radius:12px;
+    border:none;
+    cursor:pointer;
+  }
+  .share-copy-btn{ background:var(--accent); color:var(--paper); }
+  .share-modal-close{ background:#eee3d0; color:var(--ink); }
+</style>
+
+<div class="stage-bg bg-start" id="stageBg"></div>
+
+<div class="app">
+  <div class="hud">
+    <div class="badge">
+      <span class="badge-num" id="countNum">0</span>
+      <span class="badge-label">번 쓰다듬음</span>
+    </div>
+    <div class="stage-label" id="stageLabel">포근한 스튜디오</div>
+  </div>
+
+  <div class="stage-area">
+    <div class="hint" id="hint">쿼카를 톡톡 쓰다듬어보세요</div>
+
+    <button class="quokka-wrap" id="quokkaBtn" aria-label="쿼카 쓰다듬기">
+      <div class="bubble" id="bubble" hidden></div>
+      <div class="particle-layer" id="particleLayer"></div>
+      <svg class="quokka" id="quokkaSvg" viewBox="0 0 200 200" role="img" aria-hidden="true">
+        <ellipse cx="100" cy="130" rx="70" ry="58" fill="var(--fur)"/>
+        <circle cx="66" cy="62" r="24" fill="var(--fur)"/>
+        <circle cx="134" cy="62" r="24" fill="var(--fur)"/>
+        <circle cx="66" cy="66" r="12" fill="var(--ear-inner)"/>
+        <circle cx="134" cy="66" r="12" fill="var(--ear-inner)"/>
+        <ellipse cx="100" cy="142" rx="46" ry="36" fill="var(--fur-belly)"/>
+        <ellipse cx="78" cy="182" rx="19" ry="12" fill="var(--fur)"/>
+        <ellipse cx="122" cy="182" rx="19" ry="12" fill="var(--fur)"/>
+        <circle cx="65" cy="128" r="16" fill="var(--blush)" opacity=".55"/>
+        <circle cx="135" cy="128" r="16" fill="var(--blush)" opacity=".55"/>
+        <circle cx="82" cy="118" r="7" fill="var(--fur-dark)"/>
+        <circle cx="118" cy="118" r="7" fill="var(--fur-dark)"/>
+        <circle cx="84.5" cy="115.5" r="2.2" fill="#fff"/>
+        <circle cx="120.5" cy="115.5" r="2.2" fill="#fff"/>
+        <ellipse cx="100" cy="134" rx="7" ry="5" fill="var(--nose)"/>
+        <path d="M100 138 Q100 145 90 148" stroke="var(--fur-dark)" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <path d="M100 138 Q100 145 110 148" stroke="var(--fur-dark)" stroke-width="3" fill="none" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <div class="progress" id="progressWrap">
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="progress-text" id="progressText">15번 더 쓰다듬으면 서호주 오지 사막</div>
+    </div>
+  </div>
+
+  <div class="hud-bottom">
+    <button class="share-btn" id="shareBtn">🐾 친구에게 자랑하기</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="finale-overlay" id="finale" hidden>
+  <div class="finale-card">
+    <h2>딱 내가 바라던 대자연</h2>
+    <p>핑크빛 호수, 끝없는 사막, 쏟아지는 은하수 — 방금 쓰다듬으며 지나온 이 모든 순간이 실제로 서호주에 있어요. 지금 응모하고 직접 만나러 가보세요.</p>
+    <a class="cta" id="applyLink" href="#" target="_blank" rel="noopener noreferrer">지금 응모하러 가기</a>
+    <button class="finale-close" id="finaleClose">계속 쓰다듬기</button>
+  </div>
+</div>
+
+<div class="share-modal-overlay" id="shareModal" hidden>
+  <div class="share-modal">
+    <h3>링크 공유하기</h3>
+    <p class="share-modal-desc">아래 내용을 복사해서 카톡이나 문자로 친구에게 보내보세요</p>
+    <textarea class="share-textarea" id="shareTextarea" rows="3" readonly></textarea>
+    <div class="share-modal-actions">
+      <button class="share-copy-btn" id="shareCopyBtn">복사하기</button>
+      <button class="share-modal-close" id="shareModalClose">닫기</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // TODO: 실제 [딱 내가 바라던 대자연] 공식 응모 이벤트 페이지 URL로 교체하세요.
+  var APPLY_URL = 'https://www.myrealtrip.com';
+
+  var STORAGE_KEY = 'quokka-pets-v1';
+  var FINALE_KEY = 'quokka-finale-seen-v1';
+
+  var STAGES = [
+    { min: 0,   name: '포근한 스튜디오',     bg: 'bg-start' },
+    { min: 15,  name: '서호주 오지 사막',    bg: 'bg-outback' },
+    { min: 40,  name: '신비로운 핑크레이크', bg: 'bg-lake' },
+    { min: 70,  name: '쏟아지는 은하수',     bg: 'bg-night' },
+    { min: 100, name: '딱 내가 바라던 대자연', bg: 'bg-finale' }
+  ];
+
+  var REACTIONS = ['복슬복슬~', '기분 좋아요', '살랑살랑', '간지러워요', '좋아 좋아', '포근해요', '음냐음냐'];
+  var RARE_REACTIONS = ['우와 신났어요!', '방방 뛰어요!', '완전 행복해요!'];
+
+  var count = 0;
+  try {
+    var saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) count = parseInt(saved, 10) || 0;
+  } catch (e) {}
+
+  var finaleShown = false;
+  try { finaleShown = localStorage.getItem(FINALE_KEY) === '1'; } catch (e) {}
+
+  var el = {
+    countNum: document.getElementById('countNum'),
+    stageLabel: document.getElementById('stageLabel'),
+    stageBg: document.getElementById('stageBg'),
+    hint: document.getElementById('hint'),
+    quokkaBtn: document.getElementById('quokkaBtn'),
+    quokkaSvg: document.getElementById('quokkaSvg'),
+    bubble: document.getElementById('bubble'),
+    particleLayer: document.getElementById('particleLayer'),
+    progressFill: document.getElementById('progressFill'),
+    progressText: document.getElementById('progressText'),
+    shareBtn: document.getElementById('shareBtn'),
+    finale: document.getElementById('finale'),
+    applyLink: document.getElementById('applyLink'),
+    finaleClose: document.getElementById('finaleClose'),
+    toast: document.getElementById('toast'),
+    shareModal: document.getElementById('shareModal'),
+    shareTextarea: document.getElementById('shareTextarea'),
+    shareCopyBtn: document.getElementById('shareCopyBtn'),
+    shareModalClose: document.getElementById('shareModalClose')
+  };
+
+  el.applyLink.href = APPLY_URL;
+
+  function stageIndex(c) {
+    var idx = 0;
+    for (var i = 0; i < STAGES.length; i++) { if (c >= STAGES[i].min) idx = i; }
+    return idx;
+  }
+
+  var lastStageIdx = -1;
+  var toastTimer, bubbleTimer;
+
+  function showToast(msg) {
+    el.toast.textContent = msg;
+    el.toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.toast.classList.remove('show'); }, 2200);
+  }
+
+  function showBubble(text) {
+    el.bubble.hidden = false;
+    el.bubble.textContent = text;
+    requestAnimationFrame(function () { el.bubble.classList.add('show'); });
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(function () {
+      el.bubble.classList.remove('show');
+      setTimeout(function () { el.bubble.hidden = true; }, 200);
+    }, 1000);
+  }
+
+  function spawnParticle(rare) {
+    var p = document.createElement('span');
+    p.className = 'particle' + (rare ? ' rare' : '');
+    p.textContent = rare ? '✨' : (Math.random() < 0.5 ? '💕' : '🤎');
+    p.style.left = (44 + Math.random() * 12) + '%';
+    p.style.setProperty('--dx', (Math.random() * 40 - 20) + 'px');
+    el.particleLayer.appendChild(p);
+    setTimeout(function () { p.remove(); }, 950);
+  }
+
+  function render() {
+    el.countNum.textContent = count;
+    var idx = stageIndex(count);
+    var stage = STAGES[idx];
+    el.stageLabel.textContent = stage.name;
+
+    if (idx !== lastStageIdx) {
+      el.stageBg.className = 'stage-bg ' + stage.bg + ' stage-transition';
+      setTimeout(function () { el.stageBg.classList.remove('stage-transition'); }, 250);
+      if (lastStageIdx !== -1) { showToast(stage.name + '에 도착했어요'); }
+      lastStageIdx = idx;
+    }
+
+    var next = STAGES[idx + 1];
+    if (next) {
+      var span = next.min - stage.min;
+      var done = count - stage.min;
+      var pct = Math.max(0, Math.min(100, Math.round((done / span) * 100)));
+      el.progressFill.style.width = pct + '%';
+      el.progressText.textContent = (next.min - count) + '번 더 쓰다듬으면 ' + next.name;
+    } else {
+      el.progressFill.style.width = '100%';
+      el.progressText.textContent = '대자연 완성!';
+      if (!finaleShown) {
+        finaleShown = true;
+        try { localStorage.setItem(FINALE_KEY, '1'); } catch (e) {}
+        setTimeout(function () { el.finale.hidden = false; }, 450);
+      }
+    }
+  }
+
+  function pet() {
+    count += 1;
+    try { localStorage.setItem(STORAGE_KEY, String(count)); } catch (e) {}
+
+    if (count === 1) { el.hint.classList.add('hidden'); }
+
+    var rare = Math.random() < 0.12;
+    el.quokkaSvg.classList.remove('petted', 'jump');
+    void el.quokkaSvg.offsetWidth;
+    el.quokkaSvg.classList.add(rare ? 'jump' : 'petted');
+
+    var pool = rare ? RARE_REACTIONS : REACTIONS;
+    showBubble(pool[Math.floor(Math.random() * pool.length)]);
+    spawnParticle(rare);
+    if (rare) spawnParticle(rare);
+
+    render();
+  }
+
+  el.quokkaBtn.addEventListener('click', pet);
+
+  function openShareModal(text) {
+    el.shareTextarea.value = text;
+    el.shareModal.hidden = false;
+    setTimeout(function () {
+      el.shareTextarea.focus();
+      el.shareTextarea.select();
+    }, 50);
+  }
+
+  el.shareBtn.addEventListener('click', function () {
+    var stage = STAGES[stageIndex(count)];
+    var text = '나는 쿼카를 ' + count + '번 쓰다듬어서 "' + stage.name + '"에 도착했어! 너도 쓰다듬어볼래? ' + location.href;
+
+    var shared = false;
+    if (navigator.share) {
+      try {
+        navigator.share({ title: '복슬복슬 쿼카', text: text }).catch(function () {});
+        shared = true;
+      } catch (e) { shared = false; }
+    }
+    if (!shared) {
+      openShareModal(text);
+    }
+  });
+
+  el.shareCopyBtn.addEventListener('click', function () {
+    el.shareTextarea.focus();
+    el.shareTextarea.select();
+    var copied = false;
+    try { copied = document.execCommand('copy'); } catch (e) { copied = false; }
+
+    if (copied) {
+      showToast('복사했어요! 친구에게 붙여넣어보세요');
+      return;
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(el.shareTextarea.value).then(function () {
+        showToast('복사했어요! 친구에게 붙여넣어보세요');
+      }).catch(function () {
+        showToast('자동 복사가 안 돼요, 위 글상자를 직접 선택해 복사해주세요');
+      });
+    } else {
+      showToast('자동 복사가 안 돼요, 위 글상자를 직접 선택해 복사해주세요');
+    }
+  });
+
+  el.shareModalClose.addEventListener('click', function () { el.shareModal.hidden = true; });
+
+  el.finaleClose.addEventListener('click', function () { el.finale.hidden = true; });
+
+  render();
+})();
+</script>
