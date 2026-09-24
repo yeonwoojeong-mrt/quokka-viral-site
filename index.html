@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>복슬복슬 쿼카</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,6 +32,7 @@
     color:var(--ink);
     background:#1b1330;
     overflow:hidden;
+    touch-action:manipulation;
   }
 
   .stage-bg{
@@ -138,6 +139,7 @@
     padding:0;
     cursor:pointer;
     -webkit-tap-highlight-color:transparent;
+    touch-action:manipulation;
   }
   .quokka-wrap:focus-visible{ outline:3px solid var(--paper); outline-offset:6px; border-radius:50%; }
 
