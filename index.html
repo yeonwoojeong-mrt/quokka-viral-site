@@ -146,7 +146,7 @@
   }
   .quokka-wrap:focus-visible{ outline:3px solid var(--paper); outline-offset:6px; border-radius:50%; }
 
-  .quokka{ width:100%; height:100%; display:block; transform-origin:50% 70%; }
+  .quokka{ width:100%; height:100%; display:block; object-fit:contain; transform-origin:50% 70%; }
   .quokka.petted{ animation:squish .35s ease; }
   .quokka.jump{ animation:jump .55s cubic-bezier(.34,1.56,.64,1); }
   @keyframes squish{
@@ -490,25 +490,7 @@
     <button class="quokka-wrap" id="quokkaBtn" aria-label="쿼카 쓰다듬기">
       <div class="bubble" id="bubble" hidden></div>
       <div class="particle-layer" id="particleLayer"></div>
-      <svg class="quokka" id="quokkaSvg" viewBox="0 0 200 200" role="img" aria-hidden="true">
-        <ellipse cx="100" cy="130" rx="70" ry="58" fill="var(--fur)"/>
-        <circle cx="66" cy="62" r="24" fill="var(--fur)"/>
-        <circle cx="134" cy="62" r="24" fill="var(--fur)"/>
-        <circle cx="66" cy="66" r="12" fill="var(--ear-inner)"/>
-        <circle cx="134" cy="66" r="12" fill="var(--ear-inner)"/>
-        <ellipse cx="100" cy="142" rx="46" ry="36" fill="var(--fur-belly)"/>
-        <ellipse cx="78" cy="182" rx="19" ry="12" fill="var(--fur)"/>
-        <ellipse cx="122" cy="182" rx="19" ry="12" fill="var(--fur)"/>
-        <circle cx="65" cy="128" r="16" fill="var(--blush)" opacity=".55"/>
-        <circle cx="135" cy="128" r="16" fill="var(--blush)" opacity=".55"/>
-        <circle cx="82" cy="118" r="7" fill="var(--fur-dark)"/>
-        <circle cx="118" cy="118" r="7" fill="var(--fur-dark)"/>
-        <circle cx="84.5" cy="115.5" r="2.2" fill="#fff"/>
-        <circle cx="120.5" cy="115.5" r="2.2" fill="#fff"/>
-        <ellipse cx="100" cy="134" rx="7" ry="5" fill="var(--nose)"/>
-        <path d="M100 138 Q100 145 90 148" stroke="var(--fur-dark)" stroke-width="3" fill="none" stroke-linecap="round"/>
-        <path d="M100 138 Q100 145 110 148" stroke="var(--fur-dark)" stroke-width="3" fill="none" stroke-linecap="round"/>
-      </svg>
+      <img class="quokka" id="quokkaImg" src="assets/quokka-1.webp" alt="쿼카">
     </button>
 
     <div class="progress" id="progressWrap">
@@ -574,6 +556,12 @@
 
   var NAME_KEY = 'quokka-name-v1';
 
+  // 쓰다듬을수록 점점 더 웃는 사진으로 바뀜. 사진 추가할 땐 이 배열에 {min, src}만 추가하면 됨.
+  var PHOTO_FRAMES = [
+    { min: 0,  src: 'assets/quokka-1.webp' },
+    { min: 50, src: 'assets/quokka-2.webp' }
+  ];
+
   var REACTIONS = ['복슬복슬~', '기분 좋아요', '살랑살랑', '간지러워요', '좋아 좋아', '포근해요', '음냐음냐', '{name}야 좋아해', '{name}야 헤헤'];
   var RARE_REACTIONS = ['우와 신났어요!', '방방 뛰어요!', '완전 행복해요!', '{name}야 오늘 최고야!'];
 
@@ -595,7 +583,7 @@
     stageBg: document.getElementById('stageBg'),
     hint: document.getElementById('hint'),
     quokkaBtn: document.getElementById('quokkaBtn'),
-    quokkaSvg: document.getElementById('quokkaSvg'),
+    quokkaImg: document.getElementById('quokkaImg'),
     bubble: document.getElementById('bubble'),
     particleLayer: document.getElementById('particleLayer'),
     progressFill: document.getElementById('progressFill'),
@@ -624,7 +612,14 @@
     return idx;
   }
 
+  function photoFrameIndex(c) {
+    var idx = 0;
+    for (var i = 0; i < PHOTO_FRAMES.length; i++) { if (c >= PHOTO_FRAMES[i].min) idx = i; }
+    return idx;
+  }
+
   var lastStageIdx = -1;
+  var lastPhotoIdx = -1;
   var toastTimer, bubbleTimer;
 
   function showToast(msg) {
@@ -661,6 +656,12 @@
     var stage = STAGES[idx];
     el.stageLabel.textContent = stage.name;
 
+    var photoIdx = photoFrameIndex(count);
+    if (photoIdx !== lastPhotoIdx) {
+      el.quokkaImg.src = PHOTO_FRAMES[photoIdx].src;
+      lastPhotoIdx = photoIdx;
+    }
+
     if (idx !== lastStageIdx) {
       el.stageBg.className = 'stage-bg ' + stage.bg + ' stage-transition';
       setTimeout(function () { el.stageBg.classList.remove('stage-transition'); }, 250);
@@ -686,6 +687,12 @@
     }
   }
 
+  function triggerHaptic(rare) {
+    // iOS Safari는 진동 API 자체를 지원 안 해서 아무 일도 안 일어남 (정상 동작)
+    if (!navigator.vibrate) return;
+    try { navigator.vibrate(rare ? [15, 40, 15] : 12); } catch (e) {}
+  }
+
   function pet() {
     count += 1;
     try { localStorage.setItem(STORAGE_KEY, String(count)); } catch (e) {}
@@ -693,9 +700,11 @@
     if (count === 1) { el.hint.classList.add('hidden'); }
 
     var rare = Math.random() < 0.12;
-    el.quokkaSvg.classList.remove('petted', 'jump');
-    void el.quokkaSvg.offsetWidth;
-    el.quokkaSvg.classList.add(rare ? 'jump' : 'petted');
+    el.quokkaImg.classList.remove('petted', 'jump');
+    void el.quokkaImg.offsetWidth;
+    el.quokkaImg.classList.add(rare ? 'jump' : 'petted');
+
+    triggerHaptic(rare);
 
     var pool = rare ? RARE_REACTIONS : REACTIONS;
     showBubble(pool[Math.floor(Math.random() * pool.length)]);
