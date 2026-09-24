@@ -578,6 +578,15 @@
   var REACTIONS = ['복슬복슬~', '기분 좋아요', '살랑살랑', '간지러워요', '좋아 좋아', '포근해요', '음냐음냐', '{name}야 좋아해', '{name}야 헤헤'];
   var RARE_REACTIONS = ['우와 신났어요!', '방방 뛰어요!', '완전 행복해요!', '{name}야 오늘 최고야!'];
 
+  // 주소 뒤에 ?reset=1 을 붙이면 테스트용으로 모든 진행상황을 초기화함
+  if (location.search.indexOf('reset=1') !== -1) {
+    try {
+      localStorage.removeItem('quokka-pets-v1');
+      localStorage.removeItem('quokka-finale-seen-v1');
+      localStorage.removeItem('quokka-name-v1');
+    } catch (e) {}
+  }
+
   var count = 0;
   try {
     var saved = localStorage.getItem(STORAGE_KEY);
