@@ -729,29 +729,48 @@
     var ctx = getAudioCtx();
     if (!ctx) return;
 
-    var duration = rare ? 0.32 : 0.16;
+    var duration = rare ? 0.42 : 0.26;
     var bufferSize = Math.max(1, Math.floor(ctx.sampleRate * duration));
     var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     var data = buffer.getChannelData(0);
-    for (var i = 0; i < bufferSize; i++) {
-      var t = i / bufferSize;
-      var env = Math.pow(1 - t, 2.4);
-      data[i] = (Math.random() * 2 - 1) * env;
+
+    // 짧은 '긁힘' 알갱이 여러 개를 겹쳐서 벅벅거리는 질감을 만듦 (단발음 대신 연속 마찰음)
+    var grainCount = rare ? 8 : 5;
+    var grainLen = Math.max(1, Math.floor((bufferSize / grainCount) * 1.5));
+    for (var g = 0; g < grainCount; g++) {
+      var jitter = (Math.random() * 0.5 - 0.25) * (bufferSize / grainCount);
+      var start = Math.floor((g / grainCount) * bufferSize + jitter);
+      var grainAmp = 0.55 + Math.random() * 0.45;
+      for (var i = 0; i < grainLen; i++) {
+        var idx = start + i;
+        if (idx < 0 || idx >= bufferSize) continue;
+        var gt = i / grainLen;
+        var env = Math.sin(Math.PI * gt) * grainAmp;
+        data[idx] += (Math.random() * 2 - 1) * env;
+      }
+    }
+    for (var j = 0; j < bufferSize; j++) {
+      data[j] *= (1 - (j / bufferSize) * 0.3);
     }
 
     var noise = ctx.createBufferSource();
     noise.buffer = buffer;
 
-    var filter = ctx.createBiquadFilter();
-    filter.type = 'bandpass';
-    filter.frequency.value = rare ? 1600 : (850 + Math.random() * 500);
-    filter.Q.value = 0.8;
+    var hp = ctx.createBiquadFilter();
+    hp.type = 'highpass';
+    hp.frequency.value = 1100;
+
+    var bp = ctx.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.frequency.value = rare ? 4500 : (2200 + Math.random() * 1800);
+    bp.Q.value = 0.5;
 
     var gain = ctx.createGain();
-    gain.gain.value = rare ? 0.32 : 0.2;
+    gain.gain.value = rare ? 0.4 : 0.3;
 
-    noise.connect(filter);
-    filter.connect(gain);
+    noise.connect(hp);
+    hp.connect(bp);
+    bp.connect(gain);
     gain.connect(ctx.destination);
     noise.start();
 
