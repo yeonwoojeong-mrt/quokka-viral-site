@@ -396,6 +396,77 @@
   .share-copy-btn{ background:var(--accent); color:var(--paper); }
   .share-modal-close{ background:#eee3d0; color:var(--ink); }
 
+  .face-editor-overlay{
+    position:fixed;
+    inset:0;
+    z-index:13;
+    background:rgba(20,10,25,.7);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:16px;
+    box-sizing:border-box;
+  }
+  .face-editor-card{
+    background:var(--card-bg);
+    border-radius:22px;
+    padding:22px 20px;
+    max-width:360px;
+    width:100%;
+    box-sizing:border-box;
+    text-align:center;
+    box-shadow:0 12px 30px rgba(0,0,0,.3);
+  }
+  .face-editor-card h3{
+    font-family:var(--font-display);
+    font-size:19px;
+    margin:0 0 6px;
+    color:var(--accent);
+  }
+  .face-editor-desc{
+    font-size:12.5px;
+    color:var(--ink);
+    opacity:.7;
+    margin:0 0 14px;
+  }
+  .face-editor-canvas-wrap{
+    display:flex;
+    justify-content:center;
+    margin-bottom:14px;
+  }
+  #faceEditorCanvas{
+    touch-action:none;
+    border-radius:16px;
+    max-width:100%;
+    width:min(80vw,300px);
+    height:auto;
+    cursor:grab;
+  }
+  .face-zoom-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:16px;
+    font-size:16px;
+  }
+  .face-zoom-row input[type="range"]{ flex:1; }
+  .face-editor-actions{
+    display:flex;
+    gap:8px;
+  }
+  .face-editor-cancel, .face-editor-confirm{
+    flex:1;
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:14px;
+    padding:12px;
+    border-radius:12px;
+    border:none;
+    cursor:pointer;
+  }
+  .face-editor-cancel{ background:#eee3d0; color:var(--ink); }
+  .face-editor-confirm{ background:var(--accent); color:var(--paper); }
+
   .name-tag{
     align-self:center;
     background:rgba(255,253,248,.9);
@@ -541,6 +612,23 @@
   </div>
 </div>
 
+<div class="face-editor-overlay" id="faceEditor" hidden>
+  <div class="face-editor-card">
+    <h3>내 얼굴 위치 맞추기</h3>
+    <p class="face-editor-desc">드래그로 위치를 옮기고, 슬라이더나 두 손가락으로 확대/축소하세요</p>
+    <div class="face-editor-canvas-wrap">
+      <canvas id="faceEditorCanvas"></canvas>
+    </div>
+    <div class="face-zoom-row">
+      🔍 <input type="range" id="faceZoomSlider" min="100" max="350" value="100">
+    </div>
+    <div class="face-editor-actions">
+      <button class="face-editor-cancel" id="faceEditorCancel">취소</button>
+      <button class="face-editor-confirm" id="faceEditorConfirm">적용하기</button>
+    </div>
+  </div>
+</div>
+
 <div class="share-modal-overlay" id="shareModal" hidden>
   <div class="share-modal">
     <h3>링크 공유하기</h3>
@@ -610,6 +698,11 @@
     quokkaCanvas: document.getElementById('quokkaCanvas'),
     faceBtn: document.getElementById('faceBtn'),
     facePicker: document.getElementById('facePicker'),
+    faceEditor: document.getElementById('faceEditor'),
+    faceEditorCanvas: document.getElementById('faceEditorCanvas'),
+    faceZoomSlider: document.getElementById('faceZoomSlider'),
+    faceEditorCancel: document.getElementById('faceEditorCancel'),
+    faceEditorConfirm: document.getElementById('faceEditorConfirm'),
     bubble: document.getElementById('bubble'),
     particleLayer: document.getElementById('particleLayer'),
     progressFill: document.getElementById('progressFill'),
@@ -650,8 +743,49 @@
 
   // 업로드한 얼굴 사진(Image/ImageBitmap) — 없으면 기본 쿼카 얼굴 그대로
   var faceImg = null;
-  // 기본 쿼카 사진(600x630) 기준 얼굴이 들어갈 타원 위치/크기. 필요하면 이 숫자만 조정하면 됨.
-  var FACE_MASK = { cx: 295, cy: 190, rx: 125, ry: 100 };
+  var faceZoomApplied = 1;
+  var facePanXApplied = 0;
+  var facePanYApplied = 0;
+
+  // 기본 쿼카 사진(600x630) 기준, 얼굴 윤곽을 따라가는 8개의 기준점.
+  // 필요하면 이 좌표들만 조정하면 얼굴 마스크 모양이 바뀜.
+  var FACE_SHAPE_POINTS = [
+    { x: 295, y: 85 },
+    { x: 400, y: 110 },
+    { x: 430, y: 190 },
+    { x: 380, y: 260 },
+    { x: 295, y: 298 },
+    { x: 210, y: 260 },
+    { x: 160, y: 190 },
+    { x: 190, y: 110 }
+  ];
+
+  function faceBBox(points) {
+    var xs = points.map(function (p) { return p.x; });
+    var ys = points.map(function (p) { return p.y; });
+    var minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs);
+    var minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
+    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+  }
+  var FBOX = faceBBox(FACE_SHAPE_POINTS);
+
+  // 기준점들을 부드러운 곡선으로 이어서 자연스러운 얼굴 윤곽 경로를 그림
+  function smoothClosedPath(ctx, points, offsetX, offsetY) {
+    offsetX = offsetX || 0;
+    offsetY = offsetY || 0;
+    function mid(a, b) { return { x: (a.x + b.x) / 2 + offsetX, y: (a.y + b.y) / 2 + offsetY }; }
+    var n = points.length;
+    var start = mid(points[n - 1], points[0]);
+    ctx.beginPath();
+    ctx.moveTo(start.x, start.y);
+    for (var i = 0; i < n; i++) {
+      var p = points[i];
+      var next = points[(i + 1) % n];
+      var m = mid(p, next);
+      ctx.quadraticCurveTo(p.x + offsetX, p.y + offsetY, m.x, m.y);
+    }
+    ctx.closePath();
+  }
 
   var frameImageCache = {};
   function getFrameImage(src) {
@@ -674,15 +808,13 @@
       canvasCtx.drawImage(baseImg, 0, 0, el.quokkaCanvas.width, el.quokkaCanvas.height);
       if (faceImg) {
         canvasCtx.save();
-        canvasCtx.beginPath();
-        canvasCtx.ellipse(FACE_MASK.cx, FACE_MASK.cy, FACE_MASK.rx, FACE_MASK.ry, 0, 0, Math.PI * 2);
+        smoothClosedPath(canvasCtx, FACE_SHAPE_POINTS, 0, 0);
         canvasCtx.clip();
-        var iw = faceImg.width, ih = faceImg.height;
-        var boxW = FACE_MASK.rx * 2, boxH = FACE_MASK.ry * 2;
-        var scale = Math.max(boxW / iw, boxH / ih);
-        var dw = iw * scale, dh = ih * scale;
-        var dx = FACE_MASK.cx - dw / 2;
-        var dy = FACE_MASK.cy - dh / 2;
+        var baseScale = Math.max(FBOX.w / faceImg.width, FBOX.h / faceImg.height);
+        var scale = baseScale * faceZoomApplied;
+        var dw = faceImg.width * scale, dh = faceImg.height * scale;
+        var dx = FBOX.x + (FBOX.w - dw) / 2 + facePanXApplied;
+        var dy = FBOX.y + (FBOX.h - dh) / 2 + facePanYApplied;
         canvasCtx.drawImage(faceImg, dx, dy, dw, dh);
         canvasCtx.restore();
       }
@@ -929,15 +1061,145 @@
 
   el.shareModalClose.addEventListener('click', function () { el.shareModal.hidden = true; });
 
+  // --- 얼굴 위치/확대 편집기 ---
+  var editState = { img: null, baseScale: 1, zoom: 1, panX: 0, panY: 0 };
+  var pointerState = { active: false, lastX: 0, lastY: 0 };
+  var pinchState = { active: false, startDist: 0, startZoom: 1 };
+
+  el.faceEditorCanvas.width = FBOX.w;
+  el.faceEditorCanvas.height = FBOX.h;
+
+  function clampEditPan() {
+    var dw = editState.img.width * editState.baseScale * editState.zoom;
+    var dh = editState.img.height * editState.baseScale * editState.zoom;
+    var maxPanX = Math.max(0, (dw - FBOX.w) / 2);
+    var maxPanY = Math.max(0, (dh - FBOX.h) / 2);
+    editState.panX = Math.max(-maxPanX, Math.min(maxPanX, editState.panX));
+    editState.panY = Math.max(-maxPanY, Math.min(maxPanY, editState.panY));
+  }
+
+  function drawEditor() {
+    var ctx2 = el.faceEditorCanvas.getContext('2d');
+    var w = el.faceEditorCanvas.width, h = el.faceEditorCanvas.height;
+    ctx2.clearRect(0, 0, w, h);
+    if (editState.img) {
+      var scale = editState.baseScale * editState.zoom;
+      var dw = editState.img.width * scale, dh = editState.img.height * scale;
+      var dx = (w - dw) / 2 + editState.panX;
+      var dy = (h - dh) / 2 + editState.panY;
+      ctx2.drawImage(editState.img, dx, dy, dw, dh);
+    }
+    ctx2.save();
+    ctx2.fillStyle = 'rgba(10,5,15,0.6)';
+    ctx2.fillRect(0, 0, w, h);
+    ctx2.globalCompositeOperation = 'destination-out';
+    smoothClosedPath(ctx2, FACE_SHAPE_POINTS, -FBOX.x, -FBOX.y);
+    ctx2.fill();
+    ctx2.restore();
+
+    ctx2.save();
+    smoothClosedPath(ctx2, FACE_SHAPE_POINTS, -FBOX.x, -FBOX.y);
+    ctx2.strokeStyle = 'rgba(255,255,255,.9)';
+    ctx2.lineWidth = 2;
+    ctx2.stroke();
+    ctx2.restore();
+  }
+
+  function setZoom(z) {
+    z = Math.max(1, Math.min(3.5, z));
+    editState.zoom = z;
+    el.faceZoomSlider.value = Math.round(z * 100);
+    clampEditPan();
+    drawEditor();
+  }
+
+  function openFaceEditor(img) {
+    editState.img = img;
+    editState.baseScale = Math.max(FBOX.w / img.width, FBOX.h / img.height);
+    editState.zoom = 1;
+    editState.panX = 0;
+    editState.panY = 0;
+    el.faceZoomSlider.value = 100;
+    el.faceEditor.hidden = false;
+    drawEditor();
+  }
+
+  function editorPointerDown(clientX, clientY) {
+    pointerState.active = true;
+    pointerState.lastX = clientX;
+    pointerState.lastY = clientY;
+  }
+  function editorPointerMove(clientX, clientY) {
+    if (!pointerState.active || !editState.img) return;
+    var rect = el.faceEditorCanvas.getBoundingClientRect();
+    var ratio = el.faceEditorCanvas.width / rect.width;
+    editState.panX += (clientX - pointerState.lastX) * ratio;
+    editState.panY += (clientY - pointerState.lastY) * ratio;
+    clampEditPan();
+    pointerState.lastX = clientX;
+    pointerState.lastY = clientY;
+    drawEditor();
+  }
+  function touchDist(t0, t1) {
+    var dx = t1.clientX - t0.clientX, dy = t1.clientY - t0.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  el.faceEditorCanvas.addEventListener('mousedown', function (e) { editorPointerDown(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', function (e) { if (pointerState.active) editorPointerMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', function () { pointerState.active = false; });
+
+  el.faceEditorCanvas.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2) {
+      pointerState.active = false;
+      pinchState.active = true;
+      pinchState.startDist = touchDist(e.touches[0], e.touches[1]);
+      pinchState.startZoom = editState.zoom;
+    } else if (e.touches.length === 1) {
+      editorPointerDown(e.touches[0].clientX, e.touches[0].clientY);
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  el.faceEditorCanvas.addEventListener('touchmove', function (e) {
+    if (pinchState.active && e.touches.length === 2) {
+      var dist = touchDist(e.touches[0], e.touches[1]);
+      setZoom(pinchState.startZoom * (dist / pinchState.startDist));
+    } else if (pointerState.active && e.touches.length === 1) {
+      editorPointerMove(e.touches[0].clientX, e.touches[0].clientY);
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  el.faceEditorCanvas.addEventListener('touchend', function (e) {
+    if (e.touches.length === 0) { pointerState.active = false; pinchState.active = false; }
+    else if (e.touches.length === 1) { pinchState.active = false; editorPointerDown(e.touches[0].clientX, e.touches[0].clientY); }
+  });
+
+  el.faceZoomSlider.addEventListener('input', function () {
+    setZoom(el.faceZoomSlider.value / 100);
+  });
+
+  el.faceEditorCancel.addEventListener('click', function () {
+    el.faceEditor.hidden = true;
+    if (!faceImg) { el.faceBtn.textContent = '🖼️'; }
+  });
+
+  el.faceEditorConfirm.addEventListener('click', function () {
+    faceImg = editState.img;
+    faceZoomApplied = editState.zoom;
+    facePanXApplied = editState.panX;
+    facePanYApplied = editState.panY;
+    el.faceEditor.hidden = true;
+    el.faceBtn.textContent = '↺';
+    drawQuokka();
+  });
+
   function fallbackReadFace(file) {
     var reader = new FileReader();
     reader.onload = function (ev) {
       var img = new Image();
-      img.onload = function () {
-        faceImg = img;
-        el.faceBtn.textContent = '↺';
-        drawQuokka();
-      };
+      img.onload = function () { openFaceEditor(img); };
       img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
@@ -959,11 +1221,7 @@
     if (!file) return;
 
     if (window.createImageBitmap) {
-      createImageBitmap(file, { imageOrientation: 'from-image' }).then(function (bitmap) {
-        faceImg = bitmap;
-        el.faceBtn.textContent = '↺';
-        drawQuokka();
-      }).catch(function () { fallbackReadFace(file); });
+      createImageBitmap(file, { imageOrientation: 'from-image' }).then(openFaceEditor).catch(function () { fallbackReadFace(file); });
     } else {
       fallbackReadFace(file);
     }
