@@ -502,7 +502,7 @@
     <button class="quokka-wrap" id="quokkaBtn" aria-label="쿼카 쓰다듬기">
       <div class="bubble" id="bubble" hidden></div>
       <div class="particle-layer" id="particleLayer"></div>
-      <img class="quokka" id="quokkaImg" src="assets/quokka-1.webp" alt="쿼카">
+      <canvas class="quokka" id="quokkaCanvas" width="600" height="630" role="img" aria-label="쿼카"></canvas>
     </button>
 
     <div class="progress" id="progressWrap">
@@ -513,6 +513,8 @@
 
   <div class="hud-bottom">
     <button class="sound-toggle" id="soundToggle" aria-label="소리 켜기/끄기">🔊</button>
+    <button class="sound-toggle" id="faceBtn" aria-label="내 얼굴로 바꾸기">🖼️</button>
+    <input type="file" id="facePicker" accept="image/*" hidden>
     <button class="share-btn" id="shareBtn">🐾 친구에게 자랑하기</button>
   </div>
 </div>
@@ -605,7 +607,9 @@
     stageBg: document.getElementById('stageBg'),
     hint: document.getElementById('hint'),
     quokkaBtn: document.getElementById('quokkaBtn'),
-    quokkaImg: document.getElementById('quokkaImg'),
+    quokkaCanvas: document.getElementById('quokkaCanvas'),
+    faceBtn: document.getElementById('faceBtn'),
+    facePicker: document.getElementById('facePicker'),
     bubble: document.getElementById('bubble'),
     particleLayer: document.getElementById('particleLayer'),
     progressFill: document.getElementById('progressFill'),
@@ -643,6 +647,53 @@
 
   var lastStageIdx = -1;
   var lastPhotoIdx = -1;
+
+  // 업로드한 얼굴 사진(Image/ImageBitmap) — 없으면 기본 쿼카 얼굴 그대로
+  var faceImg = null;
+  // 기본 쿼카 사진(600x630) 기준 얼굴이 들어갈 타원 위치/크기. 필요하면 이 숫자만 조정하면 됨.
+  var FACE_MASK = { cx: 295, cy: 190, rx: 125, ry: 100 };
+
+  var frameImageCache = {};
+  function getFrameImage(src) {
+    if (!frameImageCache[src]) {
+      var img = new Image();
+      img.src = src;
+      frameImageCache[src] = img;
+    }
+    return frameImageCache[src];
+  }
+
+  var canvasCtx = el.quokkaCanvas.getContext('2d');
+
+  function drawQuokka() {
+    var frameSrc = PHOTO_FRAMES[photoFrameIndex(count)].src;
+    var baseImg = getFrameImage(frameSrc);
+
+    function paint() {
+      canvasCtx.clearRect(0, 0, el.quokkaCanvas.width, el.quokkaCanvas.height);
+      canvasCtx.drawImage(baseImg, 0, 0, el.quokkaCanvas.width, el.quokkaCanvas.height);
+      if (faceImg) {
+        canvasCtx.save();
+        canvasCtx.beginPath();
+        canvasCtx.ellipse(FACE_MASK.cx, FACE_MASK.cy, FACE_MASK.rx, FACE_MASK.ry, 0, 0, Math.PI * 2);
+        canvasCtx.clip();
+        var iw = faceImg.width, ih = faceImg.height;
+        var boxW = FACE_MASK.rx * 2, boxH = FACE_MASK.ry * 2;
+        var scale = Math.max(boxW / iw, boxH / ih);
+        var dw = iw * scale, dh = ih * scale;
+        var dx = FACE_MASK.cx - dw / 2;
+        var dy = FACE_MASK.cy - dh / 2;
+        canvasCtx.drawImage(faceImg, dx, dy, dw, dh);
+        canvasCtx.restore();
+      }
+    }
+
+    if (baseImg.complete) {
+      paint();
+    } else {
+      baseImg.onload = paint;
+    }
+  }
   var toastTimer, bubbleTimer;
 
   function showToast(msg) {
@@ -681,8 +732,8 @@
 
     var photoIdx = photoFrameIndex(count);
     if (photoIdx !== lastPhotoIdx) {
-      el.quokkaImg.src = PHOTO_FRAMES[photoIdx].src;
       lastPhotoIdx = photoIdx;
+      drawQuokka();
     }
 
     if (idx !== lastStageIdx) {
@@ -812,9 +863,9 @@
     if (count === 1) { el.hint.classList.add('hidden'); }
 
     var rare = Math.random() < 0.12;
-    el.quokkaImg.classList.remove('petted', 'jump');
-    void el.quokkaImg.offsetWidth;
-    el.quokkaImg.classList.add(rare ? 'jump' : 'petted');
+    el.quokkaCanvas.classList.remove('petted', 'jump');
+    void el.quokkaCanvas.offsetWidth;
+    el.quokkaCanvas.classList.add(rare ? 'jump' : 'petted');
 
     triggerHaptic(rare);
     playPetSound(rare);
@@ -877,6 +928,46 @@
   });
 
   el.shareModalClose.addEventListener('click', function () { el.shareModal.hidden = true; });
+
+  function fallbackReadFace(file) {
+    var reader = new FileReader();
+    reader.onload = function (ev) {
+      var img = new Image();
+      img.onload = function () {
+        faceImg = img;
+        el.faceBtn.textContent = '↺';
+        drawQuokka();
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  el.faceBtn.addEventListener('click', function () {
+    if (faceImg) {
+      faceImg = null;
+      el.faceBtn.textContent = '🖼️';
+      drawQuokka();
+    } else {
+      el.facePicker.click();
+    }
+  });
+
+  el.facePicker.addEventListener('change', function (e) {
+    var file = e.target.files && e.target.files[0];
+    el.facePicker.value = '';
+    if (!file) return;
+
+    if (window.createImageBitmap) {
+      createImageBitmap(file, { imageOrientation: 'from-image' }).then(function (bitmap) {
+        faceImg = bitmap;
+        el.faceBtn.textContent = '↺';
+        drawQuokka();
+      }).catch(function () { fallbackReadFace(file); });
+    } else {
+      fallbackReadFace(file);
+    }
+  });
 
   el.finaleClose.addEventListener('click', function () { el.finale.hidden = true; });
 
