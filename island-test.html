@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>쿼카섬 (테스트)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  @font-face{
+    font-family:'DOS Saemmul';
+    src:url('assets/fonts/DOSSaemmul-subset.woff2') format('woff2');
+    font-display:swap;
+  }
+  :root{
+    --ink:#33251a;
+    --paper:#fff9f0;
+    --card-bg:#fffdf8;
+    --accent:#c1502e;
+    --leaf:#4f9a4a;
+    --font-display:'DOS Saemmul','Malgun Gothic',sans-serif;
+  }
+  [hidden]{ display:none!important; }
+  html,body{height:100%;}
+  body{
+    margin:0;
+    font-family:var(--font-display);
+    color:var(--ink);
+    background:#1b1330;
+    overflow:hidden;
+    touch-action:manipulation;
+  }
+
+  .island-bg{
+    position:fixed; inset:0; z-index:0;
+    background:
+      linear-gradient(180deg,#bdeeff 0%,#9fe0f5 38%,#f3e3a8 39%,#f6deA0 60%,#e8c979 100%);
+  }
+  .island-bg::before{
+    content:"";
+    position:absolute; left:0; right:0; bottom:0; height:42%;
+    background:
+      radial-gradient(ellipse at 20% 100%, rgba(255,255,255,.35), transparent 60%),
+      linear-gradient(180deg,#f6deA0 0%,#e3bf72 100%);
+  }
+  .deco{ position:absolute; font-size:34px; filter:drop-shadow(0 4px 4px rgba(0,0,0,.15)); user-select:none; }
+  .deco.cloud1{ top:6%; left:8%; font-size:40px; opacity:.9; }
+  .deco.cloud2{ top:12%; right:10%; font-size:30px; opacity:.85; }
+  .deco.sun{ top:5%; right:20%; font-size:38px; }
+  .deco.palm-l{ bottom:30%; left:4%; transform:scaleX(-1); }
+  .deco.palm-r{ bottom:28%; right:5%; }
+  .deco.shell{ bottom:8%; left:20%; font-size:20px; }
+  .deco.shell2{ bottom:10%; right:24%; font-size:18px; }
+
+  .app{
+    position:relative; z-index:1;
+    display:flex; flex-direction:column; height:100%;
+    padding:16px;
+    padding-top:calc(16px + env(safe-area-inset-top,0px));
+    padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));
+    box-sizing:border-box;
+    gap:10px;
+  }
+
+  .top-row{ display:flex; justify-content:space-between; align-items:flex-start; gap:8px; }
+  .name-tag{
+    background:rgba(255,253,248,.9);
+    padding:6px 16px; border-radius:999px;
+    font-size:14px; color:var(--accent); font-weight:700;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+  }
+  .quest-tracker{
+    background:rgba(255,253,248,.9);
+    padding:6px 14px; border-radius:999px;
+    font-size:13px; color:var(--ink);
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+  }
+  .quest-tracker b{ color:var(--accent); }
+
+  .stage-area{
+    position:relative; flex:1;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .quokka-wrap{
+    position:relative;
+    width:min(56vw,230px);
+    aspect-ratio:1/1;
+  }
+  .quokka{ width:100%; height:100%; display:block; object-fit:contain; transform-origin:50% 70%; }
+  .quokka.petted{ animation:squish .35s ease; }
+  .quokka.jump{ animation:jump .55s cubic-bezier(.34,1.56,.64,1); }
+  .quokka.bounce-together{ animation:bounceTogether .9s ease-out; }
+  @keyframes squish{ 0%{transform:scale(1,1)} 35%{transform:scale(1.08,.9)} 65%{transform:scale(.95,1.05)} 100%{transform:scale(1,1)} }
+  @keyframes jump{ 0%{transform:translateY(0) scale(1,1)} 35%{transform:translateY(-22px) scale(1.06,.94)} 65%{transform:translateY(6px) scale(.96,1.06)} 100%{transform:translateY(0) scale(1,1)} }
+  @keyframes bounceTogether{
+    0%,100%{ transform:translateY(0) scale(1,1); }
+    10%{ transform:translateY(-16px) scale(1.05,.95); }
+    22%{ transform:translateY(0) scale(.97,1.03); }
+    34%{ transform:translateY(-12px) scale(1.04,.96); }
+    46%{ transform:translateY(0) scale(.98,1.02); }
+    58%{ transform:translateY(-8px) scale(1.02,.98); }
+    70%{ transform:translateY(0) scale(1,1); }
+  }
+
+  .tap-target{
+    position:absolute; inset:0; background:none; border:none; padding:0; margin:0;
+    cursor:pointer; -webkit-tap-highlight-color:transparent;
+  }
+
+  .baby-quokka-wrap{
+    position:absolute;
+    width:46%;
+    aspect-ratio:1/1;
+    right:-8%;
+    bottom:-4%;
+    opacity:0;
+    transform:scale(.3) translateY(20px);
+    pointer-events:none;
+  }
+  .baby-quokka-wrap.show{
+    animation:babyPop .55s cubic-bezier(.34,1.56,.64,1) forwards;
+  }
+  @keyframes babyPop{
+    0%{ opacity:0; transform:scale(.2) translateY(30px); }
+    60%{ opacity:1; transform:scale(1.12) translateY(-4px); }
+    100%{ opacity:1; transform:scale(1) translateY(0); }
+  }
+  .baby-quokka{
+    width:100%; height:100%; display:block;
+    object-fit:contain;
+    filter:drop-shadow(0 6px 8px rgba(0,0,0,.2));
+  }
+  .baby-quokka.petted{ animation:squish .35s ease; }
+  .baby-quokka.jump{ animation:jump .55s cubic-bezier(.34,1.56,.64,1); }
+  .baby-quokka.bounce-together{ animation:bounceTogether .9s ease-out; }
+
+  .hint{
+    position:absolute; top:-6px; left:50%; transform:translate(-50%,-100%);
+    font-size:15px; color:var(--paper); text-align:center; white-space:nowrap;
+    text-shadow:0 1px 3px rgba(0,0,0,.4);
+    transition:opacity .3s ease;
+  }
+  .hint.hidden{ opacity:0; }
+
+  .bubble{
+    position:absolute; top:-10px; left:50%;
+    transform:translate(-50%,-100%) scale(.8);
+    background:var(--card-bg); color:var(--ink);
+    font-size:15px; padding:8px 14px; border-radius:14px;
+    white-space:nowrap; box-shadow:0 3px 10px rgba(0,0,0,.18);
+    opacity:0; transition:opacity .2s ease, transform .2s ease; pointer-events:none;
+  }
+  .bubble::after{
+    content:""; position:absolute; bottom:-6px; left:50%; transform:translateX(-50%);
+    border:6px solid transparent; border-top-color:var(--card-bg);
+  }
+  .bubble.show{ opacity:1; transform:translate(-50%,-110%) scale(1); }
+
+  .particle-layer{ position:absolute; inset:0; pointer-events:none; overflow:visible; }
+  .particle{ position:absolute; bottom:38%; font-size:20px; animation:float-up .9s ease-out forwards; }
+  .particle.rare{ font-size:26px; }
+  @keyframes float-up{
+    0%{ transform:translate(0,0) scale(.6); opacity:0; }
+    15%{ opacity:1; }
+    100%{ transform:translate(var(--dx,0px),-90px) scale(1.1); opacity:0; }
+  }
+
+  .leaf{
+    position:absolute;
+    width:60px; height:60px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:36px;
+    touch-action:none;
+    cursor:grab;
+    z-index:4;
+    transform:translate(-50%,-50%);
+    animation:leafBob 1.6s ease-in-out infinite;
+    filter:drop-shadow(0 6px 6px rgba(0,0,0,.25));
+  }
+  .leaf.dragging{ animation:none; cursor:grabbing; }
+  @keyframes leafBob{ 0%,100%{ transform:translate(-50%,-50%) rotate(-4deg); } 50%{ transform:translate(-50%,-50%) translateY(-10px) rotate(4deg); } }
+
+  .hud-bottom{ display:flex; justify-content:center; }
+  .sound-toggle{
+    width:44px; height:44px; border-radius:50%; border:none;
+    background:var(--card-bg); font-size:18px; cursor:pointer;
+    box-shadow:0 3px 10px rgba(0,0,0,.18);
+  }
+  .sound-toggle:active{ transform:scale(.94); }
+
+  .quest-dialogue{
+    position:fixed; left:50%; bottom:calc(18px + env(safe-area-inset-bottom,0px));
+    transform:translateX(-50%);
+    width:min(92vw,380px);
+    background:var(--card-bg);
+    border:3px solid #3a2a1c;
+    border-radius:18px;
+    padding:18px 20px 16px;
+    box-sizing:border-box;
+    box-shadow:0 10px 24px rgba(0,0,0,.35);
+    z-index:8;
+    cursor:pointer;
+  }
+  .quest-tag{
+    position:absolute; top:-16px; left:16px;
+    background:#ffe9b3; border:2px solid #3a2a1c;
+    padding:4px 14px; border-radius:999px;
+    font-size:12.5px; font-weight:700; color:var(--accent);
+  }
+  .quest-text{
+    font-size:16.5px; line-height:1.55; color:var(--ink);
+    white-space:pre-line;
+    margin-top:4px;
+  }
+  .quest-next{
+    position:absolute; right:16px; bottom:10px;
+    font-size:13px; color:var(--accent);
+    animation:nextBob .9s ease-in-out infinite;
+  }
+  @keyframes nextBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(4px); } }
+
+  .quest-actions{ display:flex; gap:8px; margin-top:14px; }
+  .quest-btn{
+    flex:1; font-family:var(--font-display); font-size:14.5px;
+    color:var(--paper); background:var(--accent); border:none;
+    padding:12px; border-radius:12px; cursor:pointer;
+  }
+  .quest-btn.secondary{ background:#eee3d0; color:var(--ink); }
+  .quest-btn:active{ transform:scale(.97); }
+
+  .quest-input{
+    width:100%; box-sizing:border-box; font-family:var(--font-display);
+    font-size:18px; text-align:center; color:var(--ink);
+    background:#faf3e6; border:2px solid rgba(0,0,0,.15);
+    border-radius:12px; padding:12px; margin-top:10px;
+  }
+  .quest-input:focus{ outline:none; border-color:var(--accent); }
+
+  .finale-overlay{
+    position:fixed; inset:0; z-index:12; background:rgba(20,10,25,.55);
+    display:flex; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;
+  }
+  .finale-card{
+    background:var(--card-bg); border-radius:22px; padding:30px 24px 26px;
+    max-width:340px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(0,0,0,.3);
+  }
+  .finale-hands{ font-size:40px; margin-bottom:6px; }
+  .finale-card h2{ font-size:23px; margin:0 0 10px; color:var(--accent); }
+  .finale-card p{ font-family:'Noto Sans KR',sans-serif; font-size:14px; line-height:1.6; color:var(--ink); opacity:.85; margin:0 0 20px; }
+  .cta{
+    display:block; text-decoration:none; font-family:'Noto Sans KR',sans-serif; font-weight:700;
+    font-size:15px; color:var(--paper); background:var(--accent); padding:14px; border-radius:14px; margin-bottom:10px;
+  }
+  .finale-close{ background:none; border:none; font-size:13px; color:var(--ink); opacity:.6; text-decoration:underline; cursor:pointer; padding:6px; font-family:'Noto Sans KR',sans-serif; }
+
+  .face-editor-overlay{
+    position:fixed; inset:0; z-index:13; background:rgba(20,10,25,.7);
+    display:flex; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;
+  }
+  .face-editor-card{
+    background:var(--card-bg); border-radius:22px; padding:22px 20px; max-width:360px; width:100%;
+    box-sizing:border-box; text-align:center; box-shadow:0 12px 30px rgba(0,0,0,.3);
+  }
+  .face-editor-card h3{ font-size:19px; margin:0 0 6px; color:var(--accent); }
+  .face-editor-desc{ font-family:'Noto Sans KR',sans-serif; font-size:12.5px; color:var(--ink); opacity:.7; margin:0 0 14px; }
+  .face-editor-canvas-wrap{ display:flex; justify-content:center; margin-bottom:14px; }
+  #faceEditorCanvas{ touch-action:none; border-radius:16px; max-width:100%; width:min(80vw,300px); height:auto; cursor:grab; }
+  .face-zoom-row{ display:flex; align-items:center; gap:8px; margin-bottom:16px; font-size:16px; }
+  .face-zoom-row input[type="range"]{ flex:1; }
+  .face-editor-actions{ display:flex; gap:8px; }
+  .face-editor-cancel, .face-editor-confirm{
+    flex:1; font-family:'Noto Sans KR',sans-serif; font-weight:700; font-size:14px; padding:12px; border-radius:12px; border:none; cursor:pointer;
+  }
+  .face-editor-cancel{ background:#eee3d0; color:var(--ink); }
+  .face-editor-confirm{ background:var(--accent); color:var(--paper); }
+
+  .toast{
+    position:fixed; left:50%; top:calc(18px + env(safe-area-inset-top,0px));
+    transform:translate(-50%,-140%); background:var(--ink); color:var(--paper);
+    font-size:13px; padding:9px 16px; border-radius:999px; z-index:9;
+    opacity:0; transition:transform .35s ease, opacity .35s ease; white-space:nowrap;
+    font-family:'Noto Sans KR',sans-serif;
+  }
+  .toast.show{ transform:translate(-50%,0); opacity:1; }
+</style>
+</head>
+<body>
+
+<div class="island-bg">
+  <div class="deco sun">☀️</div>
+  <div class="deco cloud1">☁️</div>
+  <div class="deco cloud2">☁️</div>
+  <div class="deco palm-l">🌴</div>
+  <div class="deco palm-r">🌴</div>
+  <div class="deco shell">🐚</div>
+  <div class="deco shell2">🐚</div>
+</div>
+
+<div class="app">
+  <div class="top-row">
+    <div class="name-tag" id="nameTag" hidden>🐾 <span id="nameTagText"></span></div>
+    <div style="flex:1"></div>
+    <div class="quest-tracker" id="questTracker" hidden></div>
+  </div>
+
+  <div class="stage-area" id="stageArea">
+    <div class="quokka-wrap" id="quokkaWrap">
+      <div class="bubble" id="bubble" hidden></div>
+      <div class="particle-layer" id="particleLayer"></div>
+      <canvas class="quokka" id="quokkaCanvas" width="600" height="630" role="img" aria-label="쿼카"></canvas>
+      <div class="baby-quokka-wrap" id="babyQuokkaWrap">
+        <img class="baby-quokka" id="babyQuokka" src="assets/quokka-1.webp" alt="애기 쿼카">
+      </div>
+      <div class="hint hidden" id="hint">쿼카를 톡톡 쓰다듬어보세요</div>
+      <button class="tap-target" id="quokkaBtn" aria-label="쿼카 쓰다듬기"></button>
+    </div>
+    <div class="leaf" data-left="18%" data-top="72%" style="left:18%;top:72%" hidden>🍃</div>
+    <div class="leaf" data-left="80%" data-top="64%" style="left:80%;top:64%" hidden>🍃</div>
+    <div class="leaf" data-left="14%" data-top="30%" style="left:14%;top:30%" hidden>🍃</div>
+    <div class="leaf" data-left="85%" data-top="26%" style="left:85%;top:26%" hidden>🍃</div>
+    <div class="leaf" data-left="50%" data-top="85%" style="left:50%;top:85%" hidden>🍃</div>
+  </div>
+
+  <div class="hud-bottom">
+    <button class="sound-toggle" id="soundToggle" aria-label="소리 켜기/끄기">🔊</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="quest-dialogue" id="questDialogue" hidden>
+  <div class="quest-tag" id="questTag">🏝️ 쿼카섬 안내소</div>
+  <div class="quest-text" id="questText"></div>
+  <input class="quest-input" id="questInput" type="text" maxlength="8" placeholder="예: 복슬이" autocomplete="off" hidden>
+  <div class="quest-actions" id="questActions" hidden></div>
+  <div class="quest-next" id="questNext" hidden>▼</div>
+</div>
+
+<div class="finale-overlay" id="finale" hidden>
+  <div class="finale-card">
+    <div class="finale-hands">🙌🙌</div>
+    <h2>나 보러 와!!</h2>
+    <p>핑크빛 호수, 끝없는 사막, 쏟아지는 은하수 — 방금 쓰다듬으며 지나온 이 모든 순간이 실제로 서호주에 있어요. 지금 응모하고 직접 만나러 가보세요.</p>
+    <a class="cta" id="applyLink" href="#" target="_blank" rel="noopener noreferrer">지금 응모하러 가기</a>
+    <button class="finale-close" id="finaleClose">계속 쓰다듬기</button>
+  </div>
+</div>
+
+<div class="face-editor-overlay" id="faceEditor" hidden>
+  <div class="face-editor-card">
+    <h3>내 얼굴 위치 맞추기</h3>
+    <p class="face-editor-desc">드래그로 위치를 옮기고, 슬라이더나 두 손가락으로 확대/축소하세요</p>
+    <div class="face-editor-canvas-wrap"><canvas id="faceEditorCanvas"></canvas></div>
+    <div class="face-zoom-row">🔍 <input type="range" id="faceZoomSlider" min="100" max="350" value="100"></div>
+    <div class="face-editor-actions">
+      <button class="face-editor-cancel" id="faceEditorCancel">취소</button>
+      <button class="face-editor-confirm" id="faceEditorConfirm">적용하기</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="facePicker" accept="image/*" hidden>
+
+<script>
+(function(){
+  var APPLY_URL = 'https://www.myrealtrip.com';
+  var PET_GOAL = 20;
+  var BABY_PET_GOAL = 5;
+  var LEAF_GOAL = 5;
+
+  var KEYS = {
+    name: 'qi-name-v1',
+    phase: 'qi-phase-v1',
+    pets: 'qi-pets-v1',
+    babyPets: 'qi-babypets-v1',
+    leafFed: 'qi-leaffed-v1',
+    sound: 'qi-sound-v1'
+  };
+
+  if (location.search.indexOf('reset=1') !== -1) {
+    try { Object.keys(KEYS).forEach(function(k){ localStorage.removeItem(KEYS[k]); }); } catch(e){}
+  }
+
+  function load(key, fallback){
+    try { var v = localStorage.getItem(key); return v === null ? fallback : v; } catch(e){ return fallback; }
+  }
+  function save(key, val){ try { localStorage.setItem(key, val); } catch(e){} }
+
+  var state = {
+    name: load(KEYS.name, ''),
+    phase: load(KEYS.phase, 'welcome'), // welcome -> naming -> photoChoice -> petting -> leafFound -> feeding -> babyArrived -> finaleIntro -> done
+    pets: parseInt(load(KEYS.pets, '0'), 10) || 0,
+    babyPets: parseInt(load(KEYS.babyPets, '0'), 10) || 0,
+    leafFed: parseInt(load(KEYS.leafFed, '0'), 10) || 0
+  };
+
+  var el = {
+    nameTag: document.getElementById('nameTag'),
+    nameTagText: document.getElementById('nameTagText'),
+    questTracker: document.getElementById('questTracker'),
+    stageArea: document.getElementById('stageArea'),
+    quokkaWrap: document.getElementById('quokkaWrap'),
+    quokkaBtn: document.getElementById('quokkaBtn'),
+    quokkaCanvas: document.getElementById('quokkaCanvas'),
+    babyQuokkaWrap: document.getElementById('babyQuokkaWrap'),
+    babyQuokka: document.getElementById('babyQuokka'),
+    hint: document.getElementById('hint'),
+    leaves: Array.prototype.slice.call(document.querySelectorAll('.leaf')),
+    bubble: document.getElementById('bubble'),
+    particleLayer: document.getElementById('particleLayer'),
+    soundToggle: document.getElementById('soundToggle'),
+    toast: document.getElementById('toast'),
+    questDialogue: document.getElementById('questDialogue'),
+    questTag: document.getElementById('questTag'),
+    questText: document.getElementById('questText'),
+    questInput: document.getElementById('questInput'),
+    questActions: document.getElementById('questActions'),
+    questNext: document.getElementById('questNext'),
+    finale: document.getElementById('finale'),
+    applyLink: document.getElementById('applyLink'),
+    finaleClose: document.getElementById('finaleClose'),
+    faceBtn: null,
+    facePicker: document.getElementById('facePicker'),
+    faceEditor: document.getElementById('faceEditor'),
+    faceEditorCanvas: document.getElementById('faceEditorCanvas'),
+    faceZoomSlider: document.getElementById('faceZoomSlider'),
+    faceEditorCancel: document.getElementById('faceEditorCancel'),
+    faceEditorConfirm: document.getElementById('faceEditorConfirm')
+  };
+  el.applyLink.href = APPLY_URL;
+
+  // ---------- 쿼카 캔버스 합성 (기존 로직 재사용) ----------
+  var FACE_SHAPE_POINTS = [
+    { x: 300, y: 70 },{ x: 385, y: 92 },{ x: 415, y: 160 },{ x: 370, y: 220 },
+    { x: 300, y: 255 },{ x: 230, y: 220 },{ x: 185, y: 160 },{ x: 215, y: 92 }
+  ];
+  function faceBBox(points){
+    var xs=points.map(function(p){return p.x;}), ys=points.map(function(p){return p.y;});
+    var minX=Math.min.apply(null,xs), maxX=Math.max.apply(null,xs);
+    var minY=Math.min.apply(null,ys), maxY=Math.max.apply(null,ys);
+    return { x:minX, y:minY, w:maxX-minX, h:maxY-minY };
+  }
+  var FBOX = faceBBox(FACE_SHAPE_POINTS);
+  function smoothClosedPath(ctx, points, offsetX, offsetY){
+    offsetX=offsetX||0; offsetY=offsetY||0;
+    function mid(a,b){ return { x:(a.x+b.x)/2+offsetX, y:(a.y+b.y)/2+offsetY }; }
+    var n=points.length, start=mid(points[n-1],points[0]);
+    ctx.beginPath(); ctx.moveTo(start.x,start.y);
+    for(var i=0;i<n;i++){
+      var p=points[i], next=points[(i+1)%n], m=mid(p,next);
+      ctx.quadraticCurveTo(p.x+offsetX,p.y+offsetY,m.x,m.y);
+    }
+    ctx.closePath();
+  }
+  var baseImg = new Image();
+  baseImg.src = 'assets/quokka-1.webp';
+  var faceImg=null, faceZoomApplied=1, facePanXApplied=0, facePanYApplied=0;
+  var canvasCtx = el.quokkaCanvas.getContext('2d');
+  function drawQuokka(){
+    function paint(){
+      canvasCtx.clearRect(0,0,el.quokkaCanvas.width,el.quokkaCanvas.height);
+      canvasCtx.drawImage(baseImg,0,0,el.quokkaCanvas.width,el.quokkaCanvas.height);
+      if(faceImg){
+        canvasCtx.save();
+        smoothClosedPath(canvasCtx, FACE_SHAPE_POINTS, 0, 0);
+        canvasCtx.clip();
+        var baseScale = Math.max(FBOX.w/faceImg.width, FBOX.h/faceImg.height);
+        var scale = baseScale*faceZoomApplied;
+        var dw=faceImg.width*scale, dh=faceImg.height*scale;
+        var dx=FBOX.x+(FBOX.w-dw)/2+facePanXApplied, dy=FBOX.y+(FBOX.h-dh)/2+facePanYApplied;
+        canvasCtx.drawImage(faceImg,dx,dy,dw,dh);
+        canvasCtx.restore();
+      }
+    }
+    if(baseImg.complete) paint(); else baseImg.onload=paint;
+  }
+  drawQuokka();
+
+  // ---------- 토스트 / 말풍선 / 파티클 ----------
+  var toastTimer, bubbleTimer;
+  function showToast(msg){
+    el.toast.textContent = msg;
+    el.toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.toast.classList.remove('show'); }, 2200);
+  }
+  function showBubble(text){
+    el.bubble.hidden = false;
+    el.bubble.textContent = text.replace('{name}', state.name || '얘');
+    requestAnimationFrame(function(){ el.bubble.classList.add('show'); });
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(function(){
+      el.bubble.classList.remove('show');
+      setTimeout(function(){ el.bubble.hidden = true; }, 200);
+    }, 1000);
+  }
+  function spawnParticle(rare){
+    var p=document.createElement('span');
+    p.className='particle'+(rare?' rare':'');
+    p.textContent = rare ? '✨' : (Math.random()<0.5?'💕':'🤎');
+    p.style.left=(44+Math.random()*12)+'%';
+    p.style.setProperty('--dx',(Math.random()*40-20)+'px');
+    el.particleLayer.appendChild(p);
+    setTimeout(function(){ p.remove(); }, 950);
+  }
+
+  // ---------- 사운드 ----------
+  var soundOn = load(KEYS.sound, '1') === '1';
+  el.soundToggle.textContent = soundOn ? '🔊' : '🔇';
+  var audioCtx=null;
+  function getAudioCtx(){
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return null;
+    if(!audioCtx) audioCtx = new AC();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    return audioCtx;
+  }
+  function noiseBurst(ctx, duration, bandFreq, gainVal){
+    var bufferSize = Math.max(1, Math.floor(ctx.sampleRate*duration));
+    var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    var data = buffer.getChannelData(0);
+    var grainCount = 5, grainLen = Math.max(1, Math.floor((bufferSize/grainCount)*1.5));
+    for(var g=0; g<grainCount; g++){
+      var jitter=(Math.random()*0.5-0.25)*(bufferSize/grainCount);
+      var start=Math.floor((g/grainCount)*bufferSize+jitter);
+      var amp=0.55+Math.random()*0.45;
+      for(var i=0;i<grainLen;i++){
+        var idx=start+i; if(idx<0||idx>=bufferSize) continue;
+        var gt=i/grainLen, env=Math.sin(Math.PI*gt)*amp;
+        data[idx]+=(Math.random()*2-1)*env;
+      }
+    }
+    for(var j=0;j<bufferSize;j++){ data[j]*=(1-(j/bufferSize)*0.3); }
+    var noise=ctx.createBufferSource(); noise.buffer=buffer;
+    var hp=ctx.createBiquadFilter(); hp.type='highpass'; hp.frequency.value=900;
+    var bp=ctx.createBiquadFilter(); bp.type='bandpass'; bp.frequency.value=bandFreq; bp.Q.value=0.6;
+    var gain=ctx.createGain(); gain.gain.value=gainVal;
+    noise.connect(hp); hp.connect(bp); bp.connect(gain); gain.connect(ctx.destination);
+    noise.start();
+  }
+  function playPetSound(rare){
+    if(!soundOn) return;
+    var ctx=getAudioCtx(); if(!ctx) return;
+    noiseBurst(ctx, rare?0.42:0.26, rare?4500:(2200+Math.random()*1800), rare?0.4:0.3);
+    if(rare){
+      var osc=ctx.createOscillator(), oscGain=ctx.createGain();
+      osc.type='sine';
+      osc.frequency.setValueAtTime(1100, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime+0.14);
+      oscGain.gain.setValueAtTime(0.16, ctx.currentTime);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.26);
+      osc.connect(oscGain); oscGain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime+0.3);
+    }
+  }
+  // "쾁쾁" 먹는 소리 — 낮은 대역의 짧은 씹는 소리 두 번
+  function playEatSound(){
+    if(!soundOn) return;
+    var ctx=getAudioCtx(); if(!ctx) return;
+    noiseBurst(ctx, 0.16, 650, 0.5);
+    setTimeout(function(){ var c=getAudioCtx(); if(c) noiseBurst(c, 0.18, 550, 0.5); }, 190);
+  }
+  el.soundToggle.addEventListener('click', function(){
+    soundOn = !soundOn;
+    el.soundToggle.textContent = soundOn ? '🔊' : '🔇';
+    save(KEYS.sound, soundOn?'1':'0');
+    if(soundOn) getAudioCtx();
+  });
+
+  function triggerHaptic(rare){
+    if(!navigator.vibrate) return;
+    try{ navigator.vibrate(rare?[15,40,15]:12); }catch(e){}
+  }
+
+  // ---------- 퀘스트 말풍선 ----------
+  function hideQuest(){ el.questDialogue.hidden = true; }
+  function showQuest(opts){
+    // opts: { text, tag, input:bool, buttons:[{label, action, secondary}], tapToContinue:fn }
+    el.questDialogue.hidden = false;
+    el.questTag.textContent = opts.tag || '🏝️ 쿼카섬 안내소';
+    el.questText.textContent = opts.text;
+    el.questInput.hidden = !opts.input;
+    el.questActions.innerHTML = '';
+    el.questActions.hidden = true;
+    el.questNext.hidden = true;
+    el.questDialogue.onclick = null;
+
+    if(opts.input){
+      el.questInput.value = '';
+      setTimeout(function(){ el.questInput.focus(); }, 150);
+    }
+    if(opts.buttons && opts.buttons.length){
+      el.questActions.hidden = false;
+      opts.buttons.forEach(function(b){
+        var btn = document.createElement('button');
+        btn.className = 'quest-btn' + (b.secondary ? ' secondary' : '');
+        btn.textContent = b.label;
+        btn.addEventListener('click', function(ev){ ev.stopPropagation(); b.action(); });
+        el.questActions.appendChild(btn);
+      });
+    }
+    if(opts.tapToContinue){
+      el.questNext.hidden = false;
+      el.questDialogue.onclick = opts.tapToContinue;
+    }
+  }
+
+  // ---------- 쓰다듬기 ----------
+  var REACTIONS = ['복슬복슬~','기분 좋아요','살랑살랑','간지러워요','좋아 좋아','포근해요','{name}야 좋아해'];
+  var RARE_REACTIONS = ['우와 신났어요!','방방 뛰어요!','완전 행복해요!'];
+
+  function updateTracker(){
+    if(state.phase === 'petting'){
+      el.questTracker.hidden = false;
+      el.questTracker.innerHTML = '쓰다듬기 <b>' + Math.min(state.pets, PET_GOAL) + '/' + PET_GOAL + '</b>';
+    } else if(state.phase === 'feeding'){
+      el.questTracker.hidden = false;
+      el.questTracker.innerHTML = '나뭇잎 주기 <b>' + Math.min(state.leafFed, LEAF_GOAL) + '/' + LEAF_GOAL + '</b>';
+    } else if(state.phase === 'babyArrived'){
+      el.questTracker.hidden = false;
+      el.questTracker.innerHTML = '같이 쓰다듬기 <b>' + Math.min(state.babyPets, BABY_PET_GOAL) + '/' + BABY_PET_GOAL + '</b>';
+    } else {
+      el.questTracker.hidden = true;
+    }
+  }
+
+  function petPulse(targetEl, rare){
+    targetEl.classList.remove('petted','jump');
+    void targetEl.offsetWidth;
+    targetEl.classList.add(rare?'jump':'petted');
+  }
+
+  function bouncePulse(targetEl){
+    targetEl.classList.remove('bounce-together');
+    void targetEl.offsetWidth;
+    targetEl.classList.add('bounce-together');
+  }
+
+  function doPet(){
+    if(state.phase === 'petting'){
+      state.pets += 1;
+      save(KEYS.pets, String(state.pets));
+      if(state.pets === 1) el.hint.classList.add('hidden');
+
+      var rare = Math.random() < 0.12;
+      petPulse(el.quokkaCanvas, rare);
+      triggerHaptic(rare); playPetSound(rare);
+      var pool = rare ? RARE_REACTIONS : REACTIONS;
+      showBubble(pool[Math.floor(Math.random()*pool.length)]);
+      spawnParticle(rare); if(rare) spawnParticle(rare);
+      updateTracker();
+
+      if(state.pets >= PET_GOAL){
+        enterLeafFound();
+      }
+    } else if(state.phase === 'babyArrived'){
+      state.babyPets += 1;
+      save(KEYS.babyPets, String(state.babyPets));
+      var rare2 = Math.random() < 0.12;
+      bouncePulse(el.quokkaCanvas);
+      bouncePulse(el.babyQuokka);
+      triggerHaptic(rare2); playPetSound(rare2);
+      showBubble((rare2?RARE_REACTIONS:REACTIONS)[Math.floor(Math.random()*REACTIONS.length)]);
+      spawnParticle(rare2); if(rare2) spawnParticle(true);
+      updateTracker();
+
+      if(state.babyPets >= BABY_PET_GOAL){
+        enterFinaleIntro();
+      }
+    }
+  }
+  el.quokkaBtn.addEventListener('click', doPet);
+
+  // ---------- 나뭇잎 드래그해서 먹이주기 (5개를 하나씩) ----------
+  var dragState = { active:false, el:null, offX:0, offY:0 };
+
+  function enterLeafFound(){
+    state.phase = 'leafFound';
+    save(KEYS.phase, state.phase);
+    updateTracker();
+    showQuest({
+      text: '어? 땅에 나뭇잎 ' + LEAF_GOAL + '개가 떨어져 있어요!\n' + (state.name||'쿼카') + '한테 하나씩 가져다 줘볼까요?',
+      tapToContinue: enterFeeding
+    });
+  }
+
+  function enterFeeding(){
+    state.phase = 'feeding';
+    save(KEYS.phase, state.phase);
+    hideQuest();
+    el.leaves.forEach(function(leafEl, i){
+      leafEl.hidden = i < state.leafFed;
+      if(!leafEl.hidden){
+        leafEl.style.left = leafEl.dataset.left;
+        leafEl.style.top = leafEl.dataset.top;
+      }
+    });
+    updateTracker();
+    el.hint.textContent = '나뭇잎을 쿼카 쪽으로 끌어다 주세요';
+    el.hint.classList.remove('hidden');
+  }
+
+  function leafPointerDown(leafEl, clientX, clientY){
+    dragState.active = true;
+    dragState.el = leafEl;
+    var rect = leafEl.getBoundingClientRect();
+    dragState.offX = clientX - (rect.left + rect.width/2);
+    dragState.offY = clientY - (rect.top + rect.height/2);
+    leafEl.classList.add('dragging');
+    leafEl.style.zIndex = 6;
+  }
+  function leafPointerMove(clientX, clientY){
+    if(!dragState.active || !dragState.el) return;
+    var stageRect = el.stageArea.getBoundingClientRect();
+    var x = clientX - dragState.offX - stageRect.left;
+    var y = clientY - dragState.offY - stageRect.top;
+    dragState.el.style.left = x + 'px';
+    dragState.el.style.top = y + 'px';
+  }
+  function leafPointerUp(clientX, clientY){
+    if(!dragState.active || !dragState.el) return;
+    var leafEl = dragState.el;
+    dragState.active = false;
+    dragState.el = null;
+    leafEl.classList.remove('dragging');
+    leafEl.style.zIndex = '';
+    var wrapRect = el.quokkaWrap.getBoundingClientRect();
+    var cx = wrapRect.left + wrapRect.width/2, cy = wrapRect.top + wrapRect.height/2;
+    var dist = Math.hypot(clientX-cx, clientY-cy);
+    if(dist < wrapRect.width*0.55){
+      feedQuokka(leafEl);
+    } else {
+      // 제자리로 복귀
+      leafEl.style.left = leafEl.dataset.left;
+      leafEl.style.top = leafEl.dataset.top;
+    }
+  }
+  el.leaves.forEach(function(leafEl){
+    leafEl.addEventListener('mousedown', function(e){ leafPointerDown(leafEl, e.clientX, e.clientY); });
+    leafEl.addEventListener('touchstart', function(e){
+      var t = e.touches[0]; leafPointerDown(leafEl, t.clientX, t.clientY); e.preventDefault();
+    }, { passive:false });
+    leafEl.addEventListener('touchmove', function(e){
+      var t = e.touches[0]; leafPointerMove(t.clientX, t.clientY); e.preventDefault();
+    }, { passive:false });
+    leafEl.addEventListener('touchend', function(e){
+      var t = e.changedTouches[0]; leafPointerUp(t.clientX, t.clientY);
+    });
+  });
+  window.addEventListener('mousemove', function(e){ if(dragState.active) leafPointerMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', function(e){ if(dragState.active) leafPointerUp(e.clientX, e.clientY); });
+
+  function feedQuokka(leafEl){
+    leafEl.hidden = true;
+    state.leafFed += 1;
+    save(KEYS.leafFed, String(state.leafFed));
+    petPulse(el.quokkaCanvas, false);
+    playEatSound();
+    showBubble('쾁쾁!');
+    spawnParticle(false);
+    updateTracker();
+    if(state.leafFed >= LEAF_GOAL){
+      el.hint.classList.add('hidden');
+      setTimeout(enterBabyArrived, 700);
+    }
+  }
+
+  function enterBabyArrived(){
+    state.phase = 'babyArrived';
+    save(KEYS.phase, state.phase);
+    el.babyQuokkaWrap.classList.add('show');
+    updateTracker();
+    showQuest({
+      text: '짠! 애기 쿼카가 놀러왔어요!\n둘을 함께 쓰다듬어주세요',
+      tapToContinue: function(){ hideQuest(); }
+    });
+  }
+
+  function enterFinaleIntro(){
+    state.phase = 'finaleIntro';
+    save(KEYS.phase, state.phase);
+    updateTracker();
+    showQuest({
+      text: '쿼카들이 손을 번쩍 들었어요!\n"나 보러 와!!"',
+      tag: '🐾 ' + (state.name || '쿼카'),
+      tapToContinue: function(){
+        hideQuest();
+        setTimeout(function(){ el.finale.hidden = false; }, 200);
+      }
+    });
+  }
+  el.finaleClose.addEventListener('click', function(){ el.finale.hidden = true; });
+
+  // ---------- 얼굴 편집기 (기존 로직 재사용) ----------
+  var editState = { img:null, baseScale:1, zoom:1, panX:0, panY:0 };
+  var pointerState = { active:false, lastX:0, lastY:0 };
+  var pinchState = { active:false, startDist:0, startZoom:1 };
+  el.faceEditorCanvas.width = FBOX.w; el.faceEditorCanvas.height = FBOX.h;
+
+  function clampEditPan(){
+    var dw=editState.img.width*editState.baseScale*editState.zoom;
+    var dh=editState.img.height*editState.baseScale*editState.zoom;
+    var maxPanX=Math.max(0,(dw-FBOX.w)/2), maxPanY=Math.max(0,(dh-FBOX.h)/2);
+    editState.panX=Math.max(-maxPanX,Math.min(maxPanX,editState.panX));
+    editState.panY=Math.max(-maxPanY,Math.min(maxPanY,editState.panY));
+  }
+  function drawEditor(){
+    var ctx2=el.faceEditorCanvas.getContext('2d');
+    var w=el.faceEditorCanvas.width, h=el.faceEditorCanvas.height;
+    ctx2.clearRect(0,0,w,h);
+    if(editState.img){
+      var scale=editState.baseScale*editState.zoom;
+      var dw=editState.img.width*scale, dh=editState.img.height*scale;
+      var dx=(w-dw)/2+editState.panX, dy=(h-dh)/2+editState.panY;
+      ctx2.drawImage(editState.img,dx,dy,dw,dh);
+    }
+    ctx2.save();
+    ctx2.fillStyle='rgba(10,5,15,0.6)';
+    ctx2.fillRect(0,0,w,h);
+    ctx2.globalCompositeOperation='destination-out';
+    smoothClosedPath(ctx2, FACE_SHAPE_POINTS, -FBOX.x, -FBOX.y);
+    ctx2.fill();
+    ctx2.restore();
+    ctx2.save();
+    smoothClosedPath(ctx2, FACE_SHAPE_POINTS, -FBOX.x, -FBOX.y);
+    ctx2.strokeStyle='rgba(255,255,255,.9)'; ctx2.lineWidth=2; ctx2.stroke();
+    ctx2.restore();
+  }
+  function setZoom(z){
+    z=Math.max(1,Math.min(3.5,z));
+    editState.zoom=z; el.faceZoomSlider.value=Math.round(z*100);
+    clampEditPan(); drawEditor();
+  }
+  function openFaceEditor(img){
+    editState.img=img;
+    editState.baseScale=Math.max(FBOX.w/img.width, FBOX.h/img.height);
+    editState.zoom=1; editState.panX=0; editState.panY=0;
+    el.faceZoomSlider.value=100;
+    el.faceEditor.hidden=false;
+    drawEditor();
+  }
+  function editorPointerDown(x,y){ pointerState.active=true; pointerState.lastX=x; pointerState.lastY=y; }
+  function editorPointerMove(x,y){
+    if(!pointerState.active||!editState.img) return;
+    var rect=el.faceEditorCanvas.getBoundingClientRect();
+    var ratio=el.faceEditorCanvas.width/rect.width;
+    editState.panX+=(x-pointerState.lastX)*ratio;
+    editState.panY+=(y-pointerState.lastY)*ratio;
+    clampEditPan(); pointerState.lastX=x; pointerState.lastY=y; drawEditor();
+  }
+  function touchDist(t0,t1){ var dx=t1.clientX-t0.clientX, dy=t1.clientY-t0.clientY; return Math.sqrt(dx*dx+dy*dy); }
+  el.faceEditorCanvas.addEventListener('mousedown', function(e){ editorPointerDown(e.clientX,e.clientY); });
+  window.addEventListener('mousemove', function(e){ if(pointerState.active) editorPointerMove(e.clientX,e.clientY); });
+  window.addEventListener('mouseup', function(){ pointerState.active=false; });
+  el.faceEditorCanvas.addEventListener('touchstart', function(e){
+    if(e.touches.length===2){ pointerState.active=false; pinchState.active=true; pinchState.startDist=touchDist(e.touches[0],e.touches[1]); pinchState.startZoom=editState.zoom; }
+    else if(e.touches.length===1){ editorPointerDown(e.touches[0].clientX,e.touches[0].clientY); }
+    e.preventDefault();
+  }, { passive:false });
+  el.faceEditorCanvas.addEventListener('touchmove', function(e){
+    if(pinchState.active && e.touches.length===2){ var dist=touchDist(e.touches[0],e.touches[1]); setZoom(pinchState.startZoom*(dist/pinchState.startDist)); }
+    else if(pointerState.active && e.touches.length===1){ editorPointerMove(e.touches[0].clientX,e.touches[0].clientY); }
+    e.preventDefault();
+  }, { passive:false });
+  el.faceEditorCanvas.addEventListener('touchend', function(e){
+    if(e.touches.length===0){ pointerState.active=false; pinchState.active=false; }
+    else if(e.touches.length===1){ pinchState.active=false; editorPointerDown(e.touches[0].clientX,e.touches[0].clientY); }
+  });
+  el.faceZoomSlider.addEventListener('input', function(){ setZoom(el.faceZoomSlider.value/100); });
+  el.faceEditorCancel.addEventListener('click', function(){ el.faceEditor.hidden=true; enterPetting(); });
+  el.faceEditorConfirm.addEventListener('click', function(){
+    faceImg=editState.img; faceZoomApplied=editState.zoom; facePanXApplied=editState.panX; facePanYApplied=editState.panY;
+    el.faceEditor.hidden=true; drawQuokka(); enterPetting();
+  });
+  function fallbackReadFace(file){
+    var reader=new FileReader();
+    reader.onload=function(ev){ var img=new Image(); img.onload=function(){ openFaceEditor(img); }; img.src=ev.target.result; };
+    reader.readAsDataURL(file);
+  }
+  el.facePicker.addEventListener('change', function(e){
+    var file=e.target.files && e.target.files[0];
+    el.facePicker.value='';
+    if(!file) return;
+    if(window.createImageBitmap){ createImageBitmap(file,{imageOrientation:'from-image'}).then(openFaceEditor).catch(function(){ fallbackReadFace(file); }); }
+    else { fallbackReadFace(file); }
+  });
+
+  // ---------- 플로우 진행 ----------
+  function enterPetting(){
+    state.phase = 'petting';
+    save(KEYS.phase, state.phase);
+    hideQuest();
+    updateTracker();
+    el.hint.textContent = '쿼카를 톡톡 쓰다듬어보세요';
+    if(state.pets === 0) el.hint.classList.remove('hidden'); else el.hint.classList.add('hidden');
+  }
+
+  function enterPhotoChoice(){
+    state.phase = 'photoChoice';
+    save(KEYS.phase, state.phase);
+    showQuest({
+      text: (state.name||'쿼카') + '에게 원하는 사진을 씌워볼까요?\n아니면 이 모습 그대로가 좋을까요?',
+      buttons: [
+        { label:'내 사진 넣기', action: function(){ el.facePicker.click(); } },
+        { label:'이대로 할래요', secondary:true, action: enterPetting }
+      ]
+    });
+  }
+
+  function submitName(){
+    var value = el.questInput.value.trim().slice(0,8);
+    if(!value){ el.questInput.focus(); return; }
+    state.name = value;
+    save(KEYS.name, value);
+    el.nameTagText.textContent = value;
+    el.nameTag.hidden = false;
+    enterPhotoChoice();
+  }
+
+  function enterNaming(){
+    state.phase = 'naming';
+    save(KEYS.phase, state.phase);
+    showQuest({
+      text: '이 쿼카는 이제 당신만의 쿼카예요.\n이름을 지어주세요!',
+      input: true,
+      buttons: [ { label:'이름 지어주기', action: submitName } ]
+    });
+  }
+  el.questInput.addEventListener('keydown', function(e){ if(e.key==='Enter') submitName(); });
+
+  function enterWelcome(){
+    state.phase = 'welcome';
+    save(KEYS.phase, state.phase);
+    showQuest({
+      text: '안녕하세요, 쿼카섬에 오신 걸 환영합니다!\n벌금 없이 쿼카를 만날 수 있는 유일한 곳이에요.',
+      tapToContinue: enterNaming
+    });
+  }
+
+  // ---------- 저장된 진행상황 복원 ----------
+  if(state.name){ el.nameTagText.textContent = state.name; el.nameTag.hidden = false; }
+  updateTracker();
+
+  switch(state.phase){
+    case 'naming': enterNaming(); break;
+    case 'photoChoice': enterPhotoChoice(); break;
+    case 'petting': enterPetting(); break;
+    case 'leafFound': enterLeafFound(); break;
+    case 'feeding': enterFeeding(); break;
+    case 'babyArrived':
+      el.babyQuokkaWrap.classList.add('show');
+      state.phase = 'babyArrived';
+      updateTracker();
+      hideQuest();
+      break;
+    case 'finaleIntro':
+      el.babyQuokkaWrap.classList.add('show');
+      enterFinaleIntro();
+      break;
+    default: enterWelcome();
+  }
+})();
+</script>
+</body>
+</html>
