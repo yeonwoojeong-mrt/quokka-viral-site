@@ -34,24 +34,15 @@
 
   .island-bg{
     position:fixed; inset:0; z-index:0;
-    background:
-      linear-gradient(180deg,#bdeeff 0%,#9fe0f5 38%,#f3e3a8 39%,#f6deA0 60%,#e8c979 100%);
+    background:#bdeeff;
   }
-  .island-bg::before{
-    content:"";
-    position:absolute; left:0; right:0; bottom:0; height:42%;
-    background:
-      radial-gradient(ellipse at 20% 100%, rgba(255,255,255,.35), transparent 60%),
-      linear-gradient(180deg,#f6deA0 0%,#e3bf72 100%);
+  .bg-layer{
+    position:absolute; inset:0;
+    background-size:cover;
+    background-position:center;
+    opacity:0;
+    transition:opacity 1.3s ease;
   }
-  .deco{ position:absolute; font-size:34px; filter:drop-shadow(0 4px 4px rgba(0,0,0,.15)); user-select:none; }
-  .deco.cloud1{ top:6%; left:8%; font-size:40px; opacity:.9; }
-  .deco.cloud2{ top:12%; right:10%; font-size:30px; opacity:.85; }
-  .deco.sun{ top:5%; right:20%; font-size:38px; }
-  .deco.palm-l{ bottom:30%; left:4%; transform:scaleX(-1); }
-  .deco.palm-r{ bottom:28%; right:5%; }
-  .deco.shell{ bottom:8%; left:20%; font-size:20px; }
-  .deco.shell2{ bottom:10%; right:24%; font-size:18px; }
 
   .app{
     position:relative; z-index:1;
@@ -84,7 +75,7 @@
   }
   .quokka-wrap{
     position:relative;
-    width:min(56vw,230px);
+    width:min(74vw,320px);
     aspect-ratio:1/1;
   }
   .quokka{ width:100%; height:100%; display:block; object-fit:contain; transform-origin:50% 70%; }
@@ -108,17 +99,14 @@
     cursor:pointer; -webkit-tap-highlight-color:transparent;
   }
 
-  .baby-quokka-wrap{
+  .family-wrap{
     position:absolute;
-    width:46%;
-    aspect-ratio:1/1;
-    right:-8%;
-    bottom:-4%;
+    inset:0;
     opacity:0;
     transform:scale(.3) translateY(20px);
     pointer-events:none;
   }
-  .baby-quokka-wrap.show{
+  .family-wrap.show{
     animation:babyPop .55s cubic-bezier(.34,1.56,.64,1) forwards;
   }
   @keyframes babyPop{
@@ -126,19 +114,17 @@
     60%{ opacity:1; transform:scale(1.12) translateY(-4px); }
     100%{ opacity:1; transform:scale(1) translateY(0); }
   }
-  .baby-quokka{
+  .family-img{
     width:100%; height:100%; display:block;
     object-fit:contain;
-    filter:drop-shadow(0 6px 8px rgba(0,0,0,.2));
+    filter:drop-shadow(0 6px 10px rgba(0,0,0,.2));
   }
-  .baby-quokka.petted{ animation:squish .35s ease; }
-  .baby-quokka.jump{ animation:jump .55s cubic-bezier(.34,1.56,.64,1); }
-  .baby-quokka.bounce-together{ animation:bounceTogether .9s ease-out; }
+  .family-img.bounce-together{ animation:bounceTogether .9s ease-out; }
 
   .hint{
-    position:absolute; top:-6px; left:50%; transform:translate(-50%,-100%);
+    position:absolute; top:-58px; left:50%; transform:translate(-50%,-100%);
     font-size:15px; color:var(--paper); text-align:center; white-space:nowrap;
-    text-shadow:0 1px 3px rgba(0,0,0,.4);
+    text-shadow:0 1px 3px rgba(0,0,0,.55);
     transition:opacity .3s ease;
   }
   .hint.hidden{ opacity:0; }
@@ -168,9 +154,8 @@
 
   .leaf{
     position:absolute;
-    width:60px; height:60px;
+    width:64px; height:88px;
     display:flex; align-items:center; justify-content:center;
-    font-size:36px;
     touch-action:none;
     cursor:grab;
     z-index:4;
@@ -179,6 +164,7 @@
     filter:drop-shadow(0 6px 6px rgba(0,0,0,.25));
   }
   .leaf.dragging{ animation:none; cursor:grabbing; }
+  .leaf-img{ width:100%; height:100%; object-fit:contain; display:block; pointer-events:none; -webkit-user-drag:none; user-drag:none; -webkit-user-select:none; user-select:none; }
   @keyframes leafBob{ 0%,100%{ transform:translate(-50%,-50%) rotate(-4deg); } 50%{ transform:translate(-50%,-50%) translateY(-10px) rotate(4deg); } }
 
   .hud-bottom{ display:flex; justify-content:center; }
@@ -245,7 +231,7 @@
     background:var(--card-bg); border-radius:22px; padding:30px 24px 26px;
     max-width:340px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(0,0,0,.3);
   }
-  .finale-hands{ font-size:40px; margin-bottom:6px; }
+  .finale-hero{ width:min(55vw,210px); display:block; margin:0 auto 8px; }
   .finale-card h2{ font-size:23px; margin:0 0 10px; color:var(--accent); }
   .finale-card p{ font-family:'Noto Sans KR',sans-serif; font-size:14px; line-height:1.6; color:var(--ink); opacity:.85; margin:0 0 20px; }
   .cta{
@@ -288,13 +274,8 @@
 <body>
 
 <div class="island-bg">
-  <div class="deco sun">☀️</div>
-  <div class="deco cloud1">☁️</div>
-  <div class="deco cloud2">☁️</div>
-  <div class="deco palm-l">🌴</div>
-  <div class="deco palm-r">🌴</div>
-  <div class="deco shell">🐚</div>
-  <div class="deco shell2">🐚</div>
+  <div class="bg-layer" id="bgLayerA"></div>
+  <div class="bg-layer" id="bgLayerB"></div>
 </div>
 
 <div class="app">
@@ -309,17 +290,17 @@
       <div class="bubble" id="bubble" hidden></div>
       <div class="particle-layer" id="particleLayer"></div>
       <canvas class="quokka" id="quokkaCanvas" width="600" height="630" role="img" aria-label="쿼카"></canvas>
-      <div class="baby-quokka-wrap" id="babyQuokkaWrap">
-        <img class="baby-quokka" id="babyQuokka" src="assets/quokka-1.webp" alt="애기 쿼카">
+      <div class="family-wrap" id="familyWrap">
+        <img class="family-img" id="familyImg" src="assets/quokka-family-together.webp" alt="엄마와 아기 쿼카">
       </div>
       <div class="hint hidden" id="hint">쿼카를 톡톡 쓰다듬어보세요</div>
       <button class="tap-target" id="quokkaBtn" aria-label="쿼카 쓰다듬기"></button>
     </div>
-    <div class="leaf" data-left="18%" data-top="72%" style="left:18%;top:72%" hidden>🍃</div>
-    <div class="leaf" data-left="80%" data-top="64%" style="left:80%;top:64%" hidden>🍃</div>
-    <div class="leaf" data-left="14%" data-top="30%" style="left:14%;top:30%" hidden>🍃</div>
-    <div class="leaf" data-left="85%" data-top="26%" style="left:85%;top:26%" hidden>🍃</div>
-    <div class="leaf" data-left="50%" data-top="85%" style="left:50%;top:85%" hidden>🍃</div>
+    <div class="leaf" data-left="18%" data-top="72%" style="left:18%;top:72%" hidden><img class="leaf-img" src="assets/leaf-bite0.webp" alt="나뭇잎" draggable="false"></div>
+    <div class="leaf" data-left="80%" data-top="64%" style="left:80%;top:64%" hidden><img class="leaf-img" src="assets/leaf-bite0.webp" alt="나뭇잎" draggable="false"></div>
+    <div class="leaf" data-left="14%" data-top="30%" style="left:14%;top:30%" hidden><img class="leaf-img" src="assets/leaf-bite0.webp" alt="나뭇잎" draggable="false"></div>
+    <div class="leaf" data-left="85%" data-top="26%" style="left:85%;top:26%" hidden><img class="leaf-img" src="assets/leaf-bite0.webp" alt="나뭇잎" draggable="false"></div>
+    <div class="leaf" data-left="50%" data-top="85%" style="left:50%;top:85%" hidden><img class="leaf-img" src="assets/leaf-bite0.webp" alt="나뭇잎" draggable="false"></div>
   </div>
 
   <div class="hud-bottom">
@@ -339,7 +320,7 @@
 
 <div class="finale-overlay" id="finale" hidden>
   <div class="finale-card">
-    <div class="finale-hands">🙌🙌</div>
+    <img class="finale-hero" src="assets/quokka-family-wave.webp" alt="손을 내미는 쿼카 가족">
     <h2>나 보러 와!!</h2>
     <p>핑크빛 호수, 끝없는 사막, 쏟아지는 은하수 — 방금 쓰다듬으며 지나온 이 모든 순간이 실제로 서호주에 있어요. 지금 응모하고 직접 만나러 가보세요.</p>
     <a class="cta" id="applyLink" href="#" target="_blank" rel="noopener noreferrer">지금 응모하러 가기</a>
@@ -365,7 +346,7 @@
 (function(){
   var APPLY_URL = 'https://www.myrealtrip.com';
   var PET_GOAL = 20;
-  var BABY_PET_GOAL = 5;
+  var BABY_PET_GOAL = 10;
   var LEAF_GOAL = 5;
 
   var KEYS = {
@@ -395,6 +376,8 @@
   };
 
   var el = {
+    bgLayerA: document.getElementById('bgLayerA'),
+    bgLayerB: document.getElementById('bgLayerB'),
     nameTag: document.getElementById('nameTag'),
     nameTagText: document.getElementById('nameTagText'),
     questTracker: document.getElementById('questTracker'),
@@ -402,8 +385,8 @@
     quokkaWrap: document.getElementById('quokkaWrap'),
     quokkaBtn: document.getElementById('quokkaBtn'),
     quokkaCanvas: document.getElementById('quokkaCanvas'),
-    babyQuokkaWrap: document.getElementById('babyQuokkaWrap'),
-    babyQuokka: document.getElementById('babyQuokka'),
+    familyWrap: document.getElementById('familyWrap'),
+    familyImg: document.getElementById('familyImg'),
     hint: document.getElementById('hint'),
     leaves: Array.prototype.slice.call(document.querySelectorAll('.leaf')),
     bubble: document.getElementById('bubble'),
@@ -429,10 +412,34 @@
   };
   el.applyLink.href = APPLY_URL;
 
+  // ---------- 배경 롤링 (해질녘으로 서서히 전환) ----------
+  var BG_STAGES = ['assets/bg1.webp', 'assets/bg2.webp', 'assets/bg3.webp'];
+  var BG_OPACITY = 0.88;
+  var bgActiveIsA = true;
+  var bgStageIdx = -1;
+  function setBackground(stageIdx){
+    if(stageIdx === bgStageIdx) return;
+    var isFirst = bgStageIdx === -1;
+    bgStageIdx = stageIdx;
+    var showEl = bgActiveIsA ? el.bgLayerB : el.bgLayerA;
+    var hideEl = bgActiveIsA ? el.bgLayerA : el.bgLayerB;
+    showEl.style.backgroundImage = 'url(' + BG_STAGES[stageIdx] + ')';
+    if(isFirst){
+      showEl.style.transition = 'none';
+      showEl.style.opacity = BG_OPACITY;
+      void showEl.offsetWidth;
+      showEl.style.transition = '';
+    } else {
+      showEl.style.opacity = BG_OPACITY;
+    }
+    hideEl.style.opacity = 0;
+    bgActiveIsA = !bgActiveIsA;
+  }
+
   // ---------- 쿼카 캔버스 합성 (기존 로직 재사용) ----------
   var FACE_SHAPE_POINTS = [
-    { x: 300, y: 70 },{ x: 385, y: 92 },{ x: 415, y: 160 },{ x: 370, y: 220 },
-    { x: 300, y: 255 },{ x: 230, y: 220 },{ x: 185, y: 160 },{ x: 215, y: 92 }
+    { x: 325, y: 35 },{ x: 410, y: 55 },{ x: 435, y: 120 },{ x: 385, y: 185 },
+    { x: 300, y: 210 },{ x: 225, y: 185 },{ x: 205, y: 120 },{ x: 235, y: 52 }
   ];
   function faceBBox(points){
     var xs=points.map(function(p){return p.x;}), ys=points.map(function(p){return p.y;});
@@ -494,10 +501,10 @@
       setTimeout(function(){ el.bubble.hidden = true; }, 200);
     }, 1000);
   }
-  function spawnParticle(rare){
+  function spawnParticle(rare, forceEmoji){
     var p=document.createElement('span');
     p.className='particle'+(rare?' rare':'');
-    p.textContent = rare ? '✨' : (Math.random()<0.5?'💕':'🤎');
+    p.textContent = forceEmoji || (rare ? '✨' : (Math.random()<0.5?'💕':'🤎'));
     p.style.left=(44+Math.random()*12)+'%';
     p.style.setProperty('--dx',(Math.random()*40-20)+'px');
     el.particleLayer.appendChild(p);
@@ -657,11 +664,12 @@
       state.babyPets += 1;
       save(KEYS.babyPets, String(state.babyPets));
       var rare2 = Math.random() < 0.12;
-      bouncePulse(el.quokkaCanvas);
-      bouncePulse(el.babyQuokka);
+      bouncePulse(el.familyImg);
       triggerHaptic(rare2); playPetSound(rare2);
       showBubble((rare2?RARE_REACTIONS:REACTIONS)[Math.floor(Math.random()*REACTIONS.length)]);
-      spawnParticle(rare2); if(rare2) spawnParticle(true);
+      spawnParticle(false, '💕');
+      spawnParticle(false, '💕');
+      if(rare2) spawnParticle(true);
       updateTracker();
 
       if(state.babyPets >= BABY_PET_GOAL){
@@ -687,6 +695,7 @@
   function enterFeeding(){
     state.phase = 'feeding';
     save(KEYS.phase, state.phase);
+    setBackground(1);
     hideQuest();
     el.leaves.forEach(function(leafEl, i){
       leafEl.hidden = i < state.leafFed;
@@ -736,7 +745,8 @@
     }
   }
   el.leaves.forEach(function(leafEl){
-    leafEl.addEventListener('mousedown', function(e){ leafPointerDown(leafEl, e.clientX, e.clientY); });
+    leafEl.addEventListener('dragstart', function(e){ e.preventDefault(); });
+    leafEl.addEventListener('mousedown', function(e){ e.preventDefault(); leafPointerDown(leafEl, e.clientX, e.clientY); });
     leafEl.addEventListener('touchstart', function(e){
       var t = e.touches[0]; leafPointerDown(leafEl, t.clientX, t.clientY); e.preventDefault();
     }, { passive:false });
@@ -750,14 +760,34 @@
   window.addEventListener('mousemove', function(e){ if(dragState.active) leafPointerMove(e.clientX, e.clientY); });
   window.addEventListener('mouseup', function(e){ if(dragState.active) leafPointerUp(e.clientX, e.clientY); });
 
+  var LEAF_STAGES = ['assets/leaf-bite0.webp','assets/leaf-bite1.webp','assets/leaf-bite2.webp','assets/leaf-bite3.webp','assets/leaf-bite4.webp'];
+  // 미리 로딩해둬서, 한입 먹일 때 이미지 전환이 디코딩 지연 없이 바로바로 보이게 함
+  var leafPreload = LEAF_STAGES.map(function(src){ var im = new Image(); im.src = src; return im; });
+
   function feedQuokka(leafEl){
-    leafEl.hidden = true;
+    var imgEl = leafEl.querySelector('.leaf-img');
+    function bite(i){
+      imgEl.src = LEAF_STAGES[i];
+      petPulse(el.quokkaCanvas, false);
+      playEatSound();
+      showBubble('쾁쾁!');
+      spawnParticle(false);
+      if(i < 4){
+        setTimeout(function(){ bite(i+1); }, 400);
+      } else {
+        setTimeout(function(){
+          leafEl.hidden = true;
+          imgEl.src = LEAF_STAGES[0];
+          finishLeaf();
+        }, 400);
+      }
+    }
+    bite(1);
+  }
+
+  function finishLeaf(){
     state.leafFed += 1;
     save(KEYS.leafFed, String(state.leafFed));
-    petPulse(el.quokkaCanvas, false);
-    playEatSound();
-    showBubble('쾁쾁!');
-    spawnParticle(false);
     updateTracker();
     if(state.leafFed >= LEAF_GOAL){
       el.hint.classList.add('hidden');
@@ -768,7 +798,8 @@
   function enterBabyArrived(){
     state.phase = 'babyArrived';
     save(KEYS.phase, state.phase);
-    el.babyQuokkaWrap.classList.add('show');
+    el.quokkaCanvas.hidden = true;
+    el.familyWrap.classList.add('show');
     updateTracker();
     showQuest({
       text: '짠! 애기 쿼카가 놀러왔어요!\n둘을 함께 쓰다듬어주세요',
@@ -779,14 +810,16 @@
   function enterFinaleIntro(){
     state.phase = 'finaleIntro';
     save(KEYS.phase, state.phase);
+    setBackground(2);
+    el.familyImg.src = 'assets/quokka-family-wave.webp';
     updateTracker();
     showQuest({
-      text: '쿼카들이 손을 번쩍 들었어요!\n"나 보러 와!!"',
+      text: '고마워 ><\n우리가 살고있는 서호주로 놀러올래?',
       tag: '🐾 ' + (state.name || '쿼카'),
-      tapToContinue: function(){
+      buttons: [ { label:'공짜로 서호주 놀러가기', action: function(){
         hideQuest();
         setTimeout(function(){ el.finale.hidden = false; }, 200);
-      }
+      } } ]
     });
   }
   el.finaleClose.addEventListener('click', function(){ el.finale.hidden = true; });
@@ -939,6 +972,7 @@
 
   // ---------- 저장된 진행상황 복원 ----------
   if(state.name){ el.nameTagText.textContent = state.name; el.nameTag.hidden = false; }
+  setBackground(0);
   updateTracker();
 
   switch(state.phase){
@@ -948,13 +982,16 @@
     case 'leafFound': enterLeafFound(); break;
     case 'feeding': enterFeeding(); break;
     case 'babyArrived':
-      el.babyQuokkaWrap.classList.add('show');
+      setBackground(1);
+      el.quokkaCanvas.hidden = true;
+      el.familyWrap.classList.add('show');
       state.phase = 'babyArrived';
       updateTracker();
       hideQuest();
       break;
     case 'finaleIntro':
-      el.babyQuokkaWrap.classList.add('show');
+      el.quokkaCanvas.hidden = true;
+      el.familyWrap.classList.add('show');
       enterFinaleIntro();
       break;
     default: enterWelcome();
