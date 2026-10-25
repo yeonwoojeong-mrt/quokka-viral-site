@@ -69,6 +69,14 @@
     box-shadow:0 2px 8px rgba(0,0,0,.12);
   }
   .quest-tracker b{ color:var(--accent); }
+  .quest-tracker.bump{ animation:trackerBump .45s ease; }
+  @keyframes trackerBump{
+    0%{ transform:scale(1); }
+    22%{ transform:scale(1.22); }
+    42%{ transform:scale(.95); }
+    64%{ transform:scale(1.12); }
+    100%{ transform:scale(1); }
+  }
 
   .stage-area{
     position:relative; flex:1;
@@ -676,6 +684,11 @@
       el.questTracker.hidden = true;
     }
   }
+  function bumpTracker(){
+    el.questTracker.classList.remove('bump');
+    void el.questTracker.offsetWidth;
+    el.questTracker.classList.add('bump');
+  }
 
   function petPulse(targetEl, rare){
     targetEl.classList.remove('petted','jump');
@@ -702,6 +715,7 @@
       showBubble(pool[Math.floor(Math.random()*pool.length)]);
       if(rare){ spawnParticle(true); spawnParticle(true); }
       updateTracker();
+      bumpTracker();
 
       if(state.pets >= PET_GOAL){
         enterLeafFound();
@@ -716,6 +730,7 @@
       spawnHeartParticle();
       if(rare2) spawnHeartParticle(true);
       updateTracker();
+      bumpTracker();
 
       if(state.babyPets >= BABY_PET_GOAL){
         enterFinaleIntro();
@@ -880,6 +895,7 @@
     state.leafFed += 1;
     save(KEYS.leafFed, String(state.leafFed));
     updateTracker();
+    bumpTracker();
     if(state.leafFed >= LEAF_GOAL){
       el.hint.classList.add('hidden');
       setTimeout(enterBabyArrived, 700);
