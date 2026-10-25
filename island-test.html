@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>쿼카섬 (테스트)</title>
+<link rel="preload" href="assets/fonts/DOSSaemmul-subset.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -97,6 +98,7 @@
   .tap-target{
     position:absolute; inset:0; background:none; border:none; padding:0; margin:0;
     cursor:pointer; -webkit-tap-highlight-color:transparent;
+    touch-action:none;
   }
 
   .family-wrap{
@@ -120,6 +122,27 @@
     filter:drop-shadow(0 6px 10px rgba(0,0,0,.2));
   }
   .family-img.bounce-together{ animation:bounceTogether .9s ease-out; }
+
+  .finale-video-wrap{
+    position:relative;
+    width:min(80vw,370px);
+    aspect-ratio:16/9;
+    margin-bottom:30px;
+    box-shadow:0 10px 24px rgba(0,0,0,.3);
+    border-radius:18px;
+  }
+  .finale-video-wrap video{
+    width:100%; height:100%; object-fit:cover; display:block;
+    background:#000;
+    border-radius:18px;
+  }
+  .finale-video-badge{
+    position:absolute; right:14px; bottom:-18px;
+    width:25%;
+    max-width:64px;
+    object-fit:contain;
+    filter:drop-shadow(0 4px 8px rgba(0,0,0,.4));
+  }
 
   .hint{
     position:absolute; top:-58px; left:50%; transform:translate(-50%,-100%);
@@ -150,6 +173,18 @@
     0%{ transform:translate(0,0) scale(.6); opacity:0; }
     15%{ opacity:1; }
     100%{ transform:translate(var(--dx,0px),-90px) scale(1.1); opacity:0; }
+  }
+  .particle.heart-particle{
+    width:30px; height:30px;
+    background:url('assets/heart-particle.webp') center/contain no-repeat;
+    animation:heart-bloom 1.7s ease-out forwards;
+  }
+  .particle.heart-particle.rare{ width:44px; height:44px; }
+  @keyframes heart-bloom{
+    0%{ transform:translate(0,10px) scale(.5); opacity:0; }
+    16%{ opacity:.6; }
+    60%{ transform:translate(calc(var(--dx,0px)*.6),-50px) scale(.95); opacity:.55; }
+    100%{ transform:translate(var(--dx,0px),-105px) scale(1.05); opacity:0; }
   }
 
   .leaf{
@@ -197,11 +232,24 @@
   .quest-text{
     font-size:16.5px; line-height:1.55; color:var(--ink);
     white-space:pre-line;
+    word-break:keep-all;
     margin-top:4px;
+    margin-bottom:34px;
   }
+  .quest-dialogue.compact{ padding:14px 16px 12px; }
+  .quest-dialogue.compact .quest-tag{ top:-13px; padding:3px 11px; font-size:11.5px; }
+  .quest-dialogue.compact .quest-text{ font-size:13.5px; line-height:1.4; margin-top:2px; margin-bottom:6px; }
+  .quest-dialogue.compact .quest-actions{ margin-top:8px; }
+  .quest-dialogue.compact .quest-btn{ font-size:13px; padding:9px; }
   .quest-next{
-    position:absolute; right:16px; bottom:10px;
-    font-size:13px; color:var(--accent);
+    position:absolute; right:14px; bottom:10px;
+    display:flex; align-items:center; gap:4px;
+    font-family:var(--font-display);
+    font-size:13.5px; font-weight:700; color:var(--paper);
+    background:var(--accent);
+    padding:6px 12px;
+    border-radius:999px;
+    box-shadow:0 2px 6px rgba(0,0,0,.2);
     animation:nextBob .9s ease-in-out infinite;
   }
   @keyframes nextBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(4px); } }
@@ -223,22 +271,14 @@
   }
   .quest-input:focus{ outline:none; border-color:var(--accent); }
 
-  .finale-overlay{
-    position:fixed; inset:0; z-index:12; background:rgba(20,10,25,.55);
-    display:flex; align-items:center; justify-content:center; padding:16px; box-sizing:border-box;
+  .quest-btn.pulse{
+    animation:ctaPulse 1.3s ease-in-out infinite;
   }
-  .finale-card{
-    background:var(--card-bg); border-radius:22px; padding:30px 24px 26px;
-    max-width:340px; width:100%; text-align:center; box-shadow:0 12px 30px rgba(0,0,0,.3);
+  @keyframes ctaPulse{
+    0%, 100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(193,80,46,.55); }
+    35%{ transform:scale(1.045); box-shadow:0 0 0 7px rgba(193,80,46,0); }
+    70%{ transform:scale(1); box-shadow:0 0 0 0 rgba(193,80,46,0); }
   }
-  .finale-hero{ width:min(55vw,210px); display:block; margin:0 auto 8px; }
-  .finale-card h2{ font-size:23px; margin:0 0 10px; color:var(--accent); }
-  .finale-card p{ font-family:'Noto Sans KR',sans-serif; font-size:14px; line-height:1.6; color:var(--ink); opacity:.85; margin:0 0 20px; }
-  .cta{
-    display:block; text-decoration:none; font-family:'Noto Sans KR',sans-serif; font-weight:700;
-    font-size:15px; color:var(--paper); background:var(--accent); padding:14px; border-radius:14px; margin-bottom:10px;
-  }
-  .finale-close{ background:none; border:none; font-size:13px; color:var(--ink); opacity:.6; text-decoration:underline; cursor:pointer; padding:6px; font-family:'Noto Sans KR',sans-serif; }
 
   .face-editor-overlay{
     position:fixed; inset:0; z-index:13; background:rgba(20,10,25,.7);
@@ -296,6 +336,10 @@
       <div class="hint hidden" id="hint">쿼카를 톡톡 쓰다듬어보세요</div>
       <button class="tap-target" id="quokkaBtn" aria-label="쿼카 쓰다듬기"></button>
     </div>
+    <div class="finale-video-wrap" id="finaleVideoWrap" hidden>
+      <video id="finaleVideo" src="assets/quokka-video.mp4" loop playsinline webkit-playsinline="true" muted></video>
+      <img class="finale-video-badge" src="assets/quokka-family-wave.webp" alt="엄마와 아기 쿼카">
+    </div>
     <div class="leaf" data-left="18%" data-top="72%" style="left:18%;top:72%" hidden><img class="leaf-img" src="assets/leaf-bite0.webp" alt="나뭇잎" draggable="false"></div>
     <div class="leaf" data-left="80%" data-top="64%" style="left:80%;top:64%" hidden><img class="leaf-img" src="assets/leaf-bite0.webp" alt="나뭇잎" draggable="false"></div>
     <div class="leaf" data-left="14%" data-top="30%" style="left:14%;top:30%" hidden><img class="leaf-img" src="assets/leaf-bite0.webp" alt="나뭇잎" draggable="false"></div>
@@ -315,18 +359,9 @@
   <div class="quest-text" id="questText"></div>
   <input class="quest-input" id="questInput" type="text" maxlength="8" placeholder="예: 복슬이" autocomplete="off" hidden>
   <div class="quest-actions" id="questActions" hidden></div>
-  <div class="quest-next" id="questNext" hidden>▼</div>
+  <div class="quest-next" id="questNext" hidden>눌러서 계속 ▼</div>
 </div>
 
-<div class="finale-overlay" id="finale" hidden>
-  <div class="finale-card">
-    <img class="finale-hero" src="assets/quokka-family-wave.webp" alt="손을 내미는 쿼카 가족">
-    <h2>나 보러 와!!</h2>
-    <p>핑크빛 호수, 끝없는 사막, 쏟아지는 은하수 — 방금 쓰다듬으며 지나온 이 모든 순간이 실제로 서호주에 있어요. 지금 응모하고 직접 만나러 가보세요.</p>
-    <a class="cta" id="applyLink" href="#" target="_blank" rel="noopener noreferrer">지금 응모하러 가기</a>
-    <button class="finale-close" id="finaleClose">계속 쓰다듬기</button>
-  </div>
-</div>
 
 <div class="face-editor-overlay" id="faceEditor" hidden>
   <div class="face-editor-card">
@@ -387,6 +422,8 @@
     quokkaCanvas: document.getElementById('quokkaCanvas'),
     familyWrap: document.getElementById('familyWrap'),
     familyImg: document.getElementById('familyImg'),
+    finaleVideoWrap: document.getElementById('finaleVideoWrap'),
+    finaleVideo: document.getElementById('finaleVideo'),
     hint: document.getElementById('hint'),
     leaves: Array.prototype.slice.call(document.querySelectorAll('.leaf')),
     bubble: document.getElementById('bubble'),
@@ -399,9 +436,6 @@
     questInput: document.getElementById('questInput'),
     questActions: document.getElementById('questActions'),
     questNext: document.getElementById('questNext'),
-    finale: document.getElementById('finale'),
-    applyLink: document.getElementById('applyLink'),
-    finaleClose: document.getElementById('finaleClose'),
     faceBtn: null,
     facePicker: document.getElementById('facePicker'),
     faceEditor: document.getElementById('faceEditor'),
@@ -410,10 +444,10 @@
     faceEditorCancel: document.getElementById('faceEditorCancel'),
     faceEditorConfirm: document.getElementById('faceEditorConfirm')
   };
-  el.applyLink.href = APPLY_URL;
-
   // ---------- 배경 롤링 (해질녘으로 서서히 전환) ----------
   var BG_STAGES = ['assets/bg1.webp', 'assets/bg2.webp', 'assets/bg3.webp'];
+  // 미리 로딩해둬서, 장면 전환 시 이미지 디코딩 지연으로 배경이 잠깐 안 보이는 현상을 방지
+  var bgPreload = BG_STAGES.map(function(src){ var im = new Image(); im.src = src; return im; });
   var BG_OPACITY = 0.88;
   var bgActiveIsA = true;
   var bgStageIdx = -1;
@@ -462,12 +496,13 @@
   var baseImg = new Image();
   baseImg.src = 'assets/quokka-1.webp';
   var faceImg=null, faceZoomApplied=1, facePanXApplied=0, facePanYApplied=0;
+  var skipFaceOverlay = false; // 먹이 주는 포즈 사진은 비율이 달라서 그동안은 얼굴합성 끔
   var canvasCtx = el.quokkaCanvas.getContext('2d');
   function drawQuokka(){
     function paint(){
       canvasCtx.clearRect(0,0,el.quokkaCanvas.width,el.quokkaCanvas.height);
       canvasCtx.drawImage(baseImg,0,0,el.quokkaCanvas.width,el.quokkaCanvas.height);
-      if(faceImg){
+      if(faceImg && !skipFaceOverlay){
         canvasCtx.save();
         smoothClosedPath(canvasCtx, FACE_SHAPE_POINTS, 0, 0);
         canvasCtx.clip();
@@ -504,11 +539,19 @@
   function spawnParticle(rare, forceEmoji){
     var p=document.createElement('span');
     p.className='particle'+(rare?' rare':'');
-    p.textContent = forceEmoji || (rare ? '✨' : (Math.random()<0.5?'💕':'🤎'));
+    p.textContent = forceEmoji || '✨';
     p.style.left=(44+Math.random()*12)+'%';
     p.style.setProperty('--dx',(Math.random()*40-20)+'px');
     el.particleLayer.appendChild(p);
     setTimeout(function(){ p.remove(); }, 950);
+  }
+  function spawnHeartParticle(big){
+    var p=document.createElement('span');
+    p.className='particle heart-particle'+(big?' rare':'');
+    p.style.left=(38+Math.random()*24)+'%';
+    p.style.setProperty('--dx',(Math.random()*50-25)+'px');
+    el.particleLayer.appendChild(p);
+    setTimeout(function(){ p.remove(); }, 1750);
   }
 
   // ---------- 사운드 ----------
@@ -584,6 +627,7 @@
   function showQuest(opts){
     // opts: { text, tag, input:bool, buttons:[{label, action, secondary}], tapToContinue:fn }
     el.questDialogue.hidden = false;
+    el.questDialogue.classList.toggle('compact', !!opts.compact);
     el.questTag.textContent = opts.tag || '🏝️ 쿼카섬 안내소';
     el.questText.textContent = opts.text;
     el.questInput.hidden = !opts.input;
@@ -600,7 +644,7 @@
       el.questActions.hidden = false;
       opts.buttons.forEach(function(b){
         var btn = document.createElement('button');
-        btn.className = 'quest-btn' + (b.secondary ? ' secondary' : '');
+        btn.className = 'quest-btn' + (b.secondary ? ' secondary' : '') + (b.pulse ? ' pulse' : '');
         btn.textContent = b.label;
         btn.addEventListener('click', function(ev){ ev.stopPropagation(); b.action(); });
         el.questActions.appendChild(btn);
@@ -613,7 +657,7 @@
   }
 
   // ---------- 쓰다듬기 ----------
-  var REACTIONS = ['복슬복슬~','기분 좋아요','살랑살랑','간지러워요','좋아 좋아','포근해요','{name}야 좋아해'];
+  var REACTIONS = ['기분 좋아용','더 쓰다듬어조..','{name} 행복해 ><','나뭇잎 내놔!!','아 배고파','간지러잉~','으헤헤','나 기엽찌 ><'];
   var RARE_REACTIONS = ['우와 신났어요!','방방 뛰어요!','완전 행복해요!'];
 
   function updateTracker(){
@@ -654,7 +698,7 @@
       triggerHaptic(rare); playPetSound(rare);
       var pool = rare ? RARE_REACTIONS : REACTIONS;
       showBubble(pool[Math.floor(Math.random()*pool.length)]);
-      spawnParticle(rare); if(rare) spawnParticle(rare);
+      if(rare){ spawnParticle(true); spawnParticle(true); }
       updateTracker();
 
       if(state.pets >= PET_GOAL){
@@ -666,10 +710,9 @@
       var rare2 = Math.random() < 0.12;
       bouncePulse(el.familyImg);
       triggerHaptic(rare2); playPetSound(rare2);
-      showBubble((rare2?RARE_REACTIONS:REACTIONS)[Math.floor(Math.random()*REACTIONS.length)]);
-      spawnParticle(false, '💕');
-      spawnParticle(false, '💕');
-      if(rare2) spawnParticle(true);
+      spawnHeartParticle();
+      spawnHeartParticle();
+      if(rare2) spawnHeartParticle(true);
       updateTracker();
 
       if(state.babyPets >= BABY_PET_GOAL){
@@ -677,7 +720,45 @@
       }
     }
   }
-  el.quokkaBtn.addEventListener('click', doPet);
+  // 톡 누르면 1번, 손가락으로 쓱 쓸면 쓸은 거리만큼 여러 번 쓰다듬어짐
+  var petStroke = { active:false, lastX:0, lastY:0, accumDist:0, pettedThisGesture:false };
+  var PET_STROKE_STEP = 30; // 이 거리(px)를 쓸 때마다 한 번씩 쓰다듬기 처리
+
+  function petStrokeStart(x, y){
+    petStroke.active = true;
+    petStroke.lastX = x;
+    petStroke.lastY = y;
+    petStroke.accumDist = 0;
+    petStroke.pettedThisGesture = false;
+  }
+  function petStrokeMove(x, y){
+    if(!petStroke.active) return;
+    var dx = x - petStroke.lastX, dy = y - petStroke.lastY;
+    petStroke.lastX = x; petStroke.lastY = y;
+    petStroke.accumDist += Math.sqrt(dx*dx + dy*dy);
+    while(petStroke.accumDist >= PET_STROKE_STEP){
+      petStroke.accumDist -= PET_STROKE_STEP;
+      petStroke.pettedThisGesture = true;
+      doPet();
+    }
+  }
+  function petStrokeEnd(){
+    if(!petStroke.active) return;
+    petStroke.active = false;
+    if(!petStroke.pettedThisGesture){ doPet(); } // 거의 움직이지 않은 탭이면 1번만
+  }
+
+  el.quokkaBtn.addEventListener('mousedown', function(e){ petStrokeStart(e.clientX, e.clientY); });
+  window.addEventListener('mousemove', function(e){ if(petStroke.active) petStrokeMove(e.clientX, e.clientY); });
+  window.addEventListener('mouseup', function(){ petStrokeEnd(); });
+
+  el.quokkaBtn.addEventListener('touchstart', function(e){
+    var t = e.touches[0]; petStrokeStart(t.clientX, t.clientY); e.preventDefault();
+  }, { passive:false });
+  el.quokkaBtn.addEventListener('touchmove', function(e){
+    var t = e.touches[0]; petStrokeMove(t.clientX, t.clientY); e.preventDefault();
+  }, { passive:false });
+  el.quokkaBtn.addEventListener('touchend', function(e){ petStrokeEnd(); });
 
   // ---------- 나뭇잎 드래그해서 먹이주기 (5개를 하나씩) ----------
   var dragState = { active:false, el:null, offX:0, offY:0 };
@@ -696,6 +777,9 @@
     state.phase = 'feeding';
     save(KEYS.phase, state.phase);
     setBackground(1);
+    skipFaceOverlay = true;
+    baseImg.src = EAT_POSE_CLOSED;
+    drawQuokka();
     hideQuest();
     el.leaves.forEach(function(leafEl, i){
       leafEl.hidden = i < state.leafFed;
@@ -764,22 +848,27 @@
   // 미리 로딩해둬서, 한입 먹일 때 이미지 전환이 디코딩 지연 없이 바로바로 보이게 함
   var leafPreload = LEAF_STAGES.map(function(src){ var im = new Image(); im.src = src; return im; });
 
+  var EAT_POSE_CLOSED = 'assets/quokka-eat-closed.webp';
+  var EAT_POSE_OPEN = 'assets/quokka-eat-open.webp';
+  var eatPosePreload = [EAT_POSE_CLOSED, EAT_POSE_OPEN].map(function(src){ var im = new Image(); im.src = src; return im; });
+
   function feedQuokka(leafEl){
     var imgEl = leafEl.querySelector('.leaf-img');
     function bite(i){
+      baseImg.src = (i % 2 === 1) ? EAT_POSE_OPEN : EAT_POSE_CLOSED;
+      drawQuokka();
       imgEl.src = LEAF_STAGES[i];
       petPulse(el.quokkaCanvas, false);
       playEatSound();
       showBubble('쾁쾁!');
-      spawnParticle(false);
       if(i < 4){
-        setTimeout(function(){ bite(i+1); }, 400);
+        setTimeout(function(){ bite(i+1); }, 180);
       } else {
         setTimeout(function(){
           leafEl.hidden = true;
           imgEl.src = LEAF_STAGES[0];
           finishLeaf();
-        }, 400);
+        }, 180);
       }
     }
     bite(1);
@@ -798,6 +887,8 @@
   function enterBabyArrived(){
     state.phase = 'babyArrived';
     save(KEYS.phase, state.phase);
+    skipFaceOverlay = false;
+    baseImg.src = 'assets/quokka-1.webp';
     el.quokkaCanvas.hidden = true;
     el.familyWrap.classList.add('show');
     updateTracker();
@@ -807,22 +898,40 @@
     });
   }
 
+  function playFinaleVideo(){
+    if(!el.finaleVideo) return;
+    el.finaleVideo.muted = false;
+    var p = el.finaleVideo.play();
+    if(p && typeof p.catch === 'function'){
+      p.catch(function(){
+        el.finaleVideo.muted = true;
+        el.finaleVideo.play();
+      });
+    }
+  }
+
+  function showFinaleVideo(){
+    el.quokkaWrap.hidden = true;
+    el.familyWrap.classList.remove('show');
+    el.finaleVideoWrap.hidden = false;
+    playFinaleVideo();
+  }
+
   function enterFinaleIntro(){
     state.phase = 'finaleIntro';
     save(KEYS.phase, state.phase);
     setBackground(2);
-    el.familyImg.src = 'assets/quokka-family-wave.webp';
+    showFinaleVideo();
     updateTracker();
     showQuest({
-      text: '고마워 ><\n우리가 살고있는 서호주로 놀러올래?',
+      text: '그거 알아요?\n서호주에는 실제로 쿼카 1만 마리가 살고 있는\n로트네스트라는 섬이 있답니다!!',
       tag: '🐾 ' + (state.name || '쿼카'),
-      buttons: [ { label:'공짜로 서호주 놀러가기', action: function(){
-        hideQuest();
-        setTimeout(function(){ el.finale.hidden = false; }, 200);
+      compact: true,
+      buttons: [ { label:'공짜로 서호주 여행가기', pulse:true, action: function(){
+        window.open(APPLY_URL, '_blank', 'noopener,noreferrer');
       } } ]
     });
   }
-  el.finaleClose.addEventListener('click', function(){ el.finale.hidden = true; });
 
   // ---------- 얼굴 편집기 (기존 로직 재사용) ----------
   var editState = { img:null, baseScale:1, zoom:1, panX:0, panY:0 };
@@ -965,7 +1074,7 @@
     state.phase = 'welcome';
     save(KEYS.phase, state.phase);
     showQuest({
-      text: '안녕하세요, 쿼카섬에 오신 걸 환영합니다!\n벌금 없이 쿼카를 만날 수 있는 유일한 곳이에요.',
+      text: '안녕하세요 쿼카섬에 오신걸 환영합니다!\n벌금없이 쿼카를 마음껏 쓰다듬어 보세요!',
       tapToContinue: enterNaming
     });
   }
@@ -983,6 +1092,8 @@
     case 'feeding': enterFeeding(); break;
     case 'babyArrived':
       setBackground(1);
+      skipFaceOverlay = false;
+      baseImg.src = 'assets/quokka-1.webp';
       el.quokkaCanvas.hidden = true;
       el.familyWrap.classList.add('show');
       state.phase = 'babyArrived';
@@ -990,8 +1101,6 @@
       hideQuest();
       break;
     case 'finaleIntro':
-      el.quokkaCanvas.hidden = true;
-      el.familyWrap.classList.add('show');
       enterFinaleIntro();
       break;
     default: enterWelcome();
