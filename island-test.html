@@ -234,11 +234,12 @@
     white-space:pre-line;
     word-break:keep-all;
     margin-top:4px;
-    margin-bottom:34px;
+    margin-bottom:10px;
   }
-  .quest-dialogue.compact{ padding:14px 16px 12px; }
-  .quest-dialogue.compact .quest-tag{ top:-13px; padding:3px 11px; font-size:11.5px; }
-  .quest-dialogue.compact .quest-text{ font-size:13.5px; line-height:1.4; margin-top:2px; margin-bottom:6px; }
+  .quest-text.has-next{ margin-bottom:34px; }
+  .quest-dialogue.compact{ padding:18px 16px 12px; bottom:calc(96px + env(safe-area-inset-bottom,0px)); }
+  .quest-dialogue.compact .quest-tag{ top:-15px; padding:3px 11px; font-size:11.5px; }
+  .quest-dialogue.compact .quest-text{ font-size:13.5px; line-height:1.4; margin-top:6px; margin-bottom:6px; }
   .quest-dialogue.compact .quest-actions{ margin-top:8px; }
   .quest-dialogue.compact .quest-btn{ font-size:13px; padding:9px; }
   .quest-next{
@@ -630,6 +631,7 @@
     el.questDialogue.classList.toggle('compact', !!opts.compact);
     el.questTag.textContent = opts.tag || '🏝️ 쿼카섬 안내소';
     el.questText.textContent = opts.text;
+    el.questText.classList.toggle('has-next', !!opts.tapToContinue);
     el.questInput.hidden = !opts.input;
     el.questActions.innerHTML = '';
     el.questActions.hidden = true;
