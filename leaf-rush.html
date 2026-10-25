@@ -123,6 +123,9 @@
     35%{ transform:scale(1.045); box-shadow:0 0 0 7px rgba(193,80,46,0); }
     70%{ transform:scale(1); box-shadow:0 0 0 0 rgba(193,80,46,0); }
   }
+  .btn-row{ display:flex; gap:8px; margin-top:10px; }
+  .btn-row .btn{ margin-top:0; }
+  .btn.small{ min-height:38px; font-size:13px; flex:1; }
 </style>
 </head>
 <body>
@@ -159,8 +162,11 @@
     <p class="result-head" id="resultHead">20장 다 줬다!</p>
     <p class="result-time" id="resultTime">0.00초</p>
     <p class="result-best" id="resultBest">베스트 0.00초</p>
-    <button class="btn secondary" id="shareBtn">친구에게 공유하기</button>
-    <button class="btn primary" id="retryBtn">다시하기</button>
+    <button class="btn primary pulse" id="applyBtn">호주 공짜여행 응모하기</button>
+    <div class="btn-row">
+      <button class="btn secondary small" id="shareBtn">공유하기</button>
+      <button class="btn secondary small" id="retryBtn">다시하기</button>
+    </div>
   </div>
 </div>
 
@@ -169,6 +175,7 @@
   'use strict';
 
   var GOAL = 50;
+  var APPLY_URL = 'https://www.myrealtrip.com';
   var PULL_DIST = 95;      // 이 거리(px)만큼 위로 당기면 1장 성공
   var EAT_CLOSED = 'assets/quokka-eat-closed.webp';
   var EAT_OPEN = 'assets/quokka-eat-open.webp';
@@ -194,6 +201,7 @@
     resultHead: document.getElementById('resultHead'),
     resultTime: document.getElementById('resultTime'),
     resultBest: document.getElementById('resultBest'),
+    applyBtn: document.getElementById('applyBtn'),
     shareBtn: document.getElementById('shareBtn'),
     retryBtn: document.getElementById('retryBtn'),
     soundToggle: document.getElementById('soundToggle')
@@ -387,6 +395,9 @@
 
   el.startBtn.addEventListener('click', startGame);
   el.retryBtn.addEventListener('click', startGame);
+  el.applyBtn.addEventListener('click', function(){
+    window.open(APPLY_URL, '_blank', 'noopener,noreferrer');
+  });
 
   // ---------- 공유 ----------
   function shareText(){
