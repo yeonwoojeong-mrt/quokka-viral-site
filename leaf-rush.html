@@ -56,35 +56,41 @@
   }
   .sound-toggle:active{ transform:scale(.94); }
 
-  .play-area{ position:relative; flex:1; display:flex; align-items:center; justify-content:center; }
-  .quokka-wrap{ position:relative; width:min(58vw,280px); aspect-ratio:600/630; }
+  .play-area{ position:relative; flex:1; overflow:hidden; }
+  .quokka-wrap{
+    position:absolute; left:50%; bottom:4%; transform:translateX(-50%);
+    width:min(58vw,280px); aspect-ratio:600/630;
+  }
   .quokka-img{ width:100%; height:100%; object-fit:contain; display:block; transform-origin:50% 70%; }
   .quokka-img.chomp{ animation:chomp .22s ease; }
   @keyframes chomp{
     0%{ transform:scale(1,1); } 40%{ transform:scale(1.05,.93); } 100%{ transform:scale(1,1); }
   }
 
-  .leaf{
-    position:absolute; width:96px;
-    transform:translate(-50%,-50%);
-    touch-action:none; cursor:grab;
-    z-index:2;
-  }
-  .leaf.snap{ transition:left .18s cubic-bezier(.3,.8,.4,1), top .18s cubic-bezier(.3,.8,.4,1); }
-  .leaf img{
-    width:100%; display:block; pointer-events:none;
-    -webkit-user-drag:none; user-drag:none; -webkit-user-select:none; user-select:none;
-    filter:drop-shadow(0 6px 10px rgba(0,0,0,.28));
-    transition:transform .12s ease;
-  }
-
   .hint{
-    position:absolute; top:-34px; left:50%; transform:translateX(-50%);
-    font-size:14px; color:var(--paper); text-align:center; white-space:nowrap;
+    position:absolute; top:-30px; left:50%; transform:translateX(-50%);
+    font-size:13.5px; color:var(--paper); text-align:center; white-space:nowrap;
     text-shadow:0 1px 3px rgba(0,0,0,.55);
     transition:opacity .3s ease;
   }
   .hint.hidden{ opacity:0; }
+
+  .falling-item{
+    position:absolute; width:72px; height:72px;
+    transform:translate(-50%,-50%);
+    display:flex; align-items:center; justify-content:center;
+    touch-action:none; cursor:grab;
+    z-index:2;
+  }
+  .falling-item img{
+    width:100%; display:block; pointer-events:none;
+    -webkit-user-drag:none; user-drag:none; -webkit-user-select:none; user-select:none;
+    filter:drop-shadow(0 6px 10px rgba(0,0,0,.28));
+  }
+  .falling-item .meat-emoji{
+    font-size:46px; line-height:1; pointer-events:none; user-select:none;
+    filter:drop-shadow(0 6px 10px rgba(0,0,0,.28));
+  }
 
   .overlay{
     position:fixed; inset:0; z-index:5;
@@ -93,6 +99,7 @@
     padding:16px; box-sizing:border-box;
   }
   .card{
+    position:relative;
     background:var(--card-bg); border:3px solid #3a2a1c; border-radius:18px;
     padding:28px 24px 24px; text-align:center; width:min(86vw,320px);
     box-shadow:0 10px 24px rgba(0,0,0,.3);
@@ -126,6 +133,15 @@
   .btn-row{ display:flex; gap:8px; margin-top:10px; }
   .btn-row .btn{ margin-top:0; }
   .btn.small{ min-height:38px; font-size:13px; flex:1; }
+
+  .close-x{
+    position:absolute; top:10px; right:10px; width:32px; height:32px;
+    border-radius:50%; border:none; background:#eee3d0; color:var(--ink);
+    font-size:16px; font-weight:700; cursor:pointer; line-height:1;
+  }
+  .close-x:active{ transform:scale(.92); }
+  .mistake-quokka{ width:112px; display:block; margin:4px auto 14px; }
+  .mistake-text{ font-size:17px; font-weight:700; margin:0; color:var(--ink); }
 </style>
 </head>
 <body>
@@ -133,7 +149,7 @@
 
 <div class="wrap">
   <div class="hud-top">
-    <div class="counter-badge" id="counterBadge" hidden>나뭇잎 <b id="counterNum">0</b>/<span id="counterGoal">20</span></div>
+    <div class="counter-badge" id="counterBadge" hidden>나뭇잎 <b id="counterNum">0</b>/<span id="counterGoal">30</span></div>
     <div style="flex:1"></div>
     <button class="sound-toggle" id="soundToggle" aria-label="소리 켜기/끄기">🔊</button>
   </div>
@@ -141,10 +157,7 @@
   <div class="play-area" id="playArea">
     <div class="quokka-wrap">
       <img class="quokka-img" id="quokkaImg" src="assets/quokka-eat-closed.webp" alt="쿼카">
-      <div class="hint hidden" id="hint">나뭇잎을 꾹 눌러서 쿼카 입까지 쭉 올려주세요!</div>
-    </div>
-    <div class="leaf" id="leaf" hidden>
-      <img id="leafImg" src="assets/leaf-bite0.webp" alt="나뭇잎" draggable="false">
+      <div class="hint hidden" id="hint">떨어지는 나뭇잎만 잡아서 쿼카 입으로 옮겨주세요!</div>
     </div>
   </div>
 </div>
@@ -152,14 +165,14 @@
 <div class="overlay" id="startOverlay">
   <div class="card">
     <h1>🍃 나뭇잎 러시</h1>
-    <p class="desc">나뭇잎 <b id="startGoalText">20</b>장을<br>쿼카한테 최대한 빨리 줘보세요!</p>
+    <p class="desc">위에서 나뭇잎이랑 고기가 같이 떨어져요!<br>나뭇잎 <b id="startGoalText">30</b>개만 골라서<br>쿼카한테 빨리 줘보세요 🍖🚫</p>
     <button class="btn primary pulse" id="startBtn">시작하기</button>
   </div>
 </div>
 
 <div class="overlay" id="overOverlay" hidden>
   <div class="card">
-    <p class="result-head" id="resultHead">20장 다 줬다!</p>
+    <p class="result-head" id="resultHead">30개 잘 골라 먹였다!</p>
     <p class="result-time" id="resultTime">0.00초</p>
     <p class="result-best" id="resultBest">베스트 0.00초</p>
     <button class="btn primary pulse" id="applyBtn">호주 공짜여행 응모하기</button>
@@ -170,13 +183,26 @@
   </div>
 </div>
 
+<div class="overlay" id="mistakeOverlay" hidden>
+  <div class="card">
+    <button class="close-x" id="mistakeClose" aria-label="닫기">✕</button>
+    <img class="mistake-quokka" src="assets/quokka-eat-closed.webp" alt="쿼카">
+    <p class="mistake-text">고기는 못 먹는다구용 ㅡㅡ</p>
+  </div>
+</div>
+
 <script>
 (function(){
   'use strict';
 
-  var GOAL = 50;
+  var GOAL = 30;
   var APPLY_URL = 'https://www.myrealtrip.com';
-  var PULL_DIST = 95;      // 이 거리(px)만큼 위로 당기면 1장 성공
+  var FALL_SPEED = 130;        // px/초, 낙하 속도
+  var SPAWN_MIN = 500, SPAWN_MAX = 850;  // 생성 간격(ms)
+  var MEAT_CHANCE = 0.32;      // 고기가 나올 확률
+  var MOUTH_RADIUS = 46;       // 입으로 인정하는 거리(px)
+  var ITEM_MARGIN = 44;        // 화면 좌우 여백(px)
+
   var EAT_CLOSED = 'assets/quokka-eat-closed.webp';
   var EAT_OPEN = 'assets/quokka-eat-open.webp';
   var BG = 'assets/bg1.webp';
@@ -187,12 +213,11 @@
 
   var el = {
     playArea: document.getElementById('playArea'),
+    quokkaWrap: document.querySelector('.quokka-wrap'),
     counterBadge: document.getElementById('counterBadge'),
     counterNum: document.getElementById('counterNum'),
     counterGoal: document.getElementById('counterGoal'),
     quokkaImg: document.getElementById('quokkaImg'),
-    leaf: document.getElementById('leaf'),
-    leafImg: document.getElementById('leafImg'),
     hint: document.getElementById('hint'),
     startOverlay: document.getElementById('startOverlay'),
     startGoalText: document.getElementById('startGoalText'),
@@ -204,15 +229,19 @@
     applyBtn: document.getElementById('applyBtn'),
     shareBtn: document.getElementById('shareBtn'),
     retryBtn: document.getElementById('retryBtn'),
-    soundToggle: document.getElementById('soundToggle')
+    soundToggle: document.getElementById('soundToggle'),
+    mistakeOverlay: document.getElementById('mistakeOverlay'),
+    mistakeClose: document.getElementById('mistakeClose')
   };
   el.counterGoal.textContent = String(GOAL);
   el.startGoalText.textContent = String(GOAL);
-  el.resultHead.textContent = GOAL + '장 다 줬다!';
+  el.resultHead.textContent = GOAL + '개 잘 골라 먹였다!';
 
   // ---------- 상태 ----------
   var state = 'idle';   // idle | ready | playing | over
   var count = 0, t0 = 0, elapsed = 0;
+  var paused = false;   // 실수 팝업 떠있는 동안 true (낙하/생성만 멈춤, 기록 시계는 계속 흐름)
+  var items = [];        // 현재 떨어지고 있는 아이템들
 
   var BEST_KEY = 'leafRush.bestTime';
   var bestTime = 0;
@@ -258,14 +287,26 @@
     noiseBurst(ctx, 0.13, 650 + Math.random()*80, 0.5);
     setTimeout(function(){ var c = getAudioCtx(); if(c) noiseBurst(c, 0.13, 540 + Math.random()*80, 0.45); }, 100);
   }
+  function playMistakeSound(){
+    if(!soundOn) return;
+    var ctx = getAudioCtx(); if(!ctx) return;
+    var o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'square';
+    o.frequency.setValueAtTime(180, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(85, ctx.currentTime + 0.25);
+    g.gain.setValueAtTime(0.2, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.28);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(); o.stop(ctx.currentTime + 0.3);
+  }
   el.soundToggle.addEventListener('click', function(){
     soundOn = !soundOn;
     el.soundToggle.textContent = soundOn ? '🔊' : '🔇';
   });
 
-  function triggerHaptic(){
+  function triggerHaptic(ms){
     if(!navigator.vibrate) return;
-    try { navigator.vibrate(10); } catch(e){}
+    try { navigator.vibrate(ms || 10); } catch(e){}
   }
 
   // ---------- HUD ----------
@@ -283,101 +324,155 @@
     setTimeout(function(){ el.quokkaImg.src = EAT_CLOSED; }, 110);
   }
 
-  // ---------- 나뭇잎 위치/드래그 ----------
-  var leafStart = { x:0, y:0 };
-  var leafPos = { x:0, y:0 };
-  var drag = null;
+  // ---------- 떨어지는 아이템 ----------
+  function getMouthPoint(){
+    var qr = el.quokkaWrap.getBoundingClientRect();
+    var pr = el.playArea.getBoundingClientRect();
+    return {
+      x: (qr.left - pr.left) + qr.width * 0.5,
+      y: (qr.top - pr.top) + qr.height * 0.335
+    };
+  }
 
-  function computeLeafStart(){
+  function spawnItem(){
     var r = el.playArea.getBoundingClientRect();
-    leafStart.x = r.width * 0.5;
-    leafStart.y = r.height * 0.66;
-  }
-  function setLeafPos(x, y, animate){
-    el.leaf.classList.toggle('snap', !!animate);
-    leafPos.x = x; leafPos.y = y;
-    el.leaf.style.left = x + 'px';
-    el.leaf.style.top = y + 'px';
-  }
-  function placeLeafAtStart(){
-    computeLeafStart();
-    setLeafPos(leafStart.x, leafStart.y, false);
-    el.leaf.hidden = false;
-    el.leafImg.style.transform = '';
-  }
-  window.addEventListener('resize', function(){
-    if(!drag) placeLeafAtStart();
-  });
-
-  function localXY(e){
-    var r = el.playArea.getBoundingClientRect();
-    return { x:e.clientX - r.left, y:e.clientY - r.top };
-  }
-
-  el.leaf.addEventListener('pointerdown', function(e){
-    if(state === 'over' || state === 'idle' || drag) return;
-    e.preventDefault();
-    try { el.leaf.setPointerCapture(e.pointerId); } catch(err){}
-    var p = localXY(e);
-    drag = { id:e.pointerId, startX:p.x, startY:p.y, baseX:leafPos.x, baseY:leafPos.y };
-    el.leaf.classList.remove('snap');
-    el.hint.classList.add('hidden');
-    if(state === 'ready'){ state = 'playing'; t0 = performance.now(); }
-  });
-
-  el.leaf.addEventListener('pointermove', function(e){
-    if(!drag || e.pointerId !== drag.id) return;
-    var p = localXY(e);
-    var dx = p.x - drag.startX, dy = p.y - drag.startY;
-    setLeafPos(drag.baseX + dx, drag.baseY + dy, false);
-    var rot = Math.max(-16, Math.min(16, dx * 0.12));
-    el.leafImg.style.transform = 'rotate(' + rot + 'deg) scale(1.1)';
-    if(drag.baseY - leafPos.y >= PULL_DIST){
-      onFeedSuccess();
-    }
-  });
-
-  function releaseDrag(e){
-    if(!drag || e.pointerId !== drag.id) return;
-    drag = null;
-    el.leafImg.style.transform = '';
-    setLeafPos(leafStart.x, leafStart.y, true);
-  }
-  el.leaf.addEventListener('pointerup', releaseDrag);
-  el.leaf.addEventListener('pointercancel', releaseDrag);
-  el.leaf.addEventListener('lostpointercapture', releaseDrag);
-
-  el.leaf.addEventListener('touchstart', function(e){ e.preventDefault(); }, { passive:false });
-  document.addEventListener('touchmove', function(e){ if(drag) e.preventDefault(); }, { passive:false });
-  el.leaf.addEventListener('dragstart', function(e){ e.preventDefault(); });
-
-  function onFeedSuccess(){
-    var completedId = drag ? drag.id : null;
-    drag = null;
-    count++;
-    bumpCounter();
-    updateCounter();
-    chewOnce();
-    playEatSound();
-    triggerHaptic();
-    el.leaf.hidden = true;
-    if(completedId !== null){ try { el.leaf.releasePointerCapture(completedId); } catch(err){} }
-    if(count >= GOAL){
-      finishGame();
+    if(r.width < ITEM_MARGIN * 2 + 10) return;
+    var type = Math.random() < MEAT_CHANCE ? 'meat' : 'leaf';
+    var wrap = document.createElement('div');
+    wrap.className = 'falling-item';
+    if(type === 'leaf'){
+      wrap.innerHTML = '<img src="' + LEAF_IMG + '" alt="나뭇잎" draggable="false">';
     } else {
-      setTimeout(placeLeafAtStart, 90);
+      wrap.innerHTML = '<span class="meat-emoji">🍖</span>';
     }
+    var x = ITEM_MARGIN + Math.random() * (r.width - ITEM_MARGIN * 2);
+    var y = -46;
+    wrap.style.left = x + 'px';
+    wrap.style.top = y + 'px';
+    el.playArea.appendChild(wrap);
+    var it = { el:wrap, type:type, x:x, y:y, grabbed:false, dragId:null };
+    bindItemEvents(it);
+    items.push(it);
+  }
+
+  function removeItem(it){
+    var idx = items.indexOf(it);
+    if(idx >= 0) items.splice(idx, 1);
+    if(it.el.parentNode) it.el.parentNode.removeChild(it.el);
+  }
+
+  function resolveFeed(it){
+    it.grabbed = false;
+    removeItem(it);
+    if(it.type === 'leaf'){
+      count++;
+      bumpCounter();
+      updateCounter();
+      chewOnce();
+      playEatSound();
+      triggerHaptic(10);
+      if(count >= GOAL) finishGame();
+    } else {
+      showMistake();
+    }
+  }
+
+  function bindItemEvents(it){
+    it.el.addEventListener('pointerdown', function(e){
+      if(state !== 'ready' && state !== 'playing') return;
+      if(it.grabbed) return;
+      e.preventDefault();
+      try { it.el.setPointerCapture(e.pointerId); } catch(err){}
+      it.grabbed = true;
+      it.dragId = e.pointerId;
+      it.el.style.cursor = 'grabbing';
+      it.startClientX = e.clientX; it.startClientY = e.clientY;
+      it.baseX = it.x; it.baseY = it.y;
+      el.hint.classList.add('hidden');
+      if(state === 'ready'){ state = 'playing'; t0 = performance.now(); }
+    });
+    it.el.addEventListener('pointermove', function(e){
+      if(!it.grabbed || e.pointerId !== it.dragId) return;
+      var dx = e.clientX - it.startClientX, dy = e.clientY - it.startClientY;
+      it.x = it.baseX + dx;
+      it.y = it.baseY + dy;
+      it.el.style.left = it.x + 'px';
+      it.el.style.top = it.y + 'px';
+      var m = getMouthPoint();
+      if(Math.hypot(it.x - m.x, it.y - m.y) <= MOUTH_RADIUS){
+        resolveFeed(it);
+      }
+    });
+    function endDrag(e){
+      if(!it.grabbed || e.pointerId !== it.dragId) return;
+      it.grabbed = false;
+      it.dragId = null;
+      it.el.style.cursor = 'grab';
+    }
+    it.el.addEventListener('pointerup', endDrag);
+    it.el.addEventListener('pointercancel', endDrag);
+    it.el.addEventListener('lostpointercapture', endDrag);
+    it.el.addEventListener('touchstart', function(e){ e.preventDefault(); }, { passive:false });
+    it.el.addEventListener('dragstart', function(e){ e.preventDefault(); });
+  }
+  document.addEventListener('touchmove', function(e){
+    var anyDrag = items.some(function(it){ return it.grabbed; });
+    if(anyDrag) e.preventDefault();
+  }, { passive:false });
+
+  function showMistake(){
+    paused = true;
+    playMistakeSound();
+    triggerHaptic([15, 40, 15]);
+    el.mistakeOverlay.hidden = false;
+  }
+  el.mistakeClose.addEventListener('click', function(){
+    el.mistakeOverlay.hidden = true;
+    paused = false;
+  });
+
+  // ---------- 메인 루프 ----------
+  var lastTime = 0, spawnAcc = 0, nextSpawnGap = SPAWN_MIN;
+  function loop(now){
+    if(!lastTime) lastTime = now;
+    var dt = Math.min((now - lastTime) / 1000, 1 / 20);
+    lastTime = now;
+    if(state === 'playing' && !paused){
+      spawnAcc += dt * 1000;
+      if(spawnAcc >= nextSpawnGap){
+        spawnAcc = 0;
+        nextSpawnGap = SPAWN_MIN + Math.random() * (SPAWN_MAX - SPAWN_MIN);
+        spawnItem();
+      }
+      var r = el.playArea.getBoundingClientRect();
+      for(var i = items.length - 1; i >= 0; i--){
+        var it = items[i];
+        if(it.grabbed) continue;
+        it.y += FALL_SPEED * dt;
+        it.el.style.top = it.y + 'px';
+        if(it.y - 50 > r.height){ removeItem(it); }
+      }
+    }
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  function clearItems(){
+    items.forEach(function(it){ if(it.el.parentNode) it.el.parentNode.removeChild(it.el); });
+    items = [];
   }
 
   // ---------- 진행 ----------
   function startGame(){
     state = 'ready';
-    count = 0; elapsed = 0;
+    count = 0; elapsed = 0; paused = false;
+    spawnAcc = 0; nextSpawnGap = SPAWN_MIN; lastTime = 0;
+    clearItems();
     updateCounter();
     el.counterBadge.hidden = false;
     el.startOverlay.hidden = true;
     el.overOverlay.hidden = true;
-    placeLeafAtStart();
+    el.mistakeOverlay.hidden = true;
     el.hint.classList.remove('hidden');
     getAudioCtx();
   }
@@ -385,6 +480,7 @@
   function finishGame(){
     state = 'over';
     elapsed = (performance.now() - t0) / 1000;
+    clearItems();
     var isNew = bestTime === 0 || elapsed < bestTime;
     if(isNew){ bestTime = elapsed; saveBest(); }
     el.resultTime.textContent = elapsed.toFixed(2) + '초';
@@ -401,7 +497,7 @@
 
   // ---------- 공유 ----------
   function shareText(){
-    return '쿼카한테 나뭇잎 ' + GOAL + '장 빨리 주기! ' + elapsed.toFixed(2) + '초 기록!\n'
+    return '쿼카한테 나뭇잎 ' + GOAL + '개 골라 먹이기! ' + elapsed.toFixed(2) + '초 기록!\n'
       + location.href.split(/[?#]/)[0] + '\n#나뭇잎러시 #쿼카섬';
   }
   function resultImageFile(){
@@ -411,7 +507,7 @@
     g.fillStyle = '#fff9f0'; g.fillRect(0, 0, 600, 600);
     g.fillStyle = '#33251a'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.font = '700 40px "DOS Saemmul"'; g.fillText('🍃 나뭇잎 러시', 300, 150);
-    g.font = '700 28px "DOS Saemmul"'; g.fillText(GOAL + '장 완주', 300, 220);
+    g.font = '700 28px "DOS Saemmul"'; g.fillText(GOAL + '개 완주', 300, 220);
     g.fillStyle = '#c1502e';
     g.font = '700 80px "DOS Saemmul"'; g.fillText(elapsed.toFixed(2) + '초', 300, 340);
     g.fillStyle = '#33251a';
@@ -438,7 +534,7 @@
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(text).then(function(){
         el.shareBtn.textContent = '복사했어요!';
-        setTimeout(function(){ el.shareBtn.textContent = '친구에게 공유하기'; }, 1500);
+        setTimeout(function(){ el.shareBtn.textContent = '공유하기'; }, 1500);
       }).catch(function(){});
     }
   });
