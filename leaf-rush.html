@@ -44,6 +44,11 @@
     font-size:17px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,.15);
   }
   .counter-badge b{ color:var(--accent); font-size:20px; }
+  .timer-badge{
+    background:rgba(255,253,248,.92); padding:8px 14px; border-radius:999px;
+    font-size:15px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,.15);
+    margin-left:8px; font-variant-numeric:tabular-nums;
+  }
   .counter-badge.bump{ animation:badgeBump .45s ease; }
   @keyframes badgeBump{
     0%{ transform:scale(1); } 22%{ transform:scale(1.22); }
@@ -150,6 +155,7 @@
 <div class="wrap">
   <div class="hud-top">
     <div class="counter-badge" id="counterBadge" hidden>나뭇잎 <b id="counterNum">0</b>/<span id="counterGoal">30</span></div>
+    <div class="timer-badge" id="timerBadge" hidden>0.0초</div>
     <div style="flex:1"></div>
     <button class="sound-toggle" id="soundToggle" aria-label="소리 켜기/끄기">🔊</button>
   </div>
@@ -197,8 +203,8 @@
 
   var GOAL = 30;
   var APPLY_URL = 'https://www.myrealtrip.com';
-  var FALL_SPEED = 240;        // px/초, 낙하 속도
-  var SPAWN_MIN = 140, SPAWN_MAX = 240;  // 생성 간격(ms)
+  var FALL_SPEED = 320;        // px/초, 낙하 속도
+  var SPAWN_MIN = 90, SPAWN_MAX = 160;  // 생성 간격(ms)
   var MEAT_CHANCE = 0.32;      // 고기가 나올 확률
   var ITEM_MARGIN = 44;        // 화면 좌우 여백(px)
 
@@ -213,6 +219,7 @@
   var el = {
     playArea: document.getElementById('playArea'),
     counterBadge: document.getElementById('counterBadge'),
+    timerBadge: document.getElementById('timerBadge'),
     counterNum: document.getElementById('counterNum'),
     counterGoal: document.getElementById('counterGoal'),
     quokkaImg: document.getElementById('quokkaImg'),
@@ -431,6 +438,9 @@
         if(it.y - 50 > r.height){ removeItem(it); }
       }
     }
+    if(state === 'playing'){
+      el.timerBadge.textContent = ((now - t0) / 1000).toFixed(1) + '초';
+    }
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
@@ -447,8 +457,11 @@
     spawnAcc = 0; nextSpawnGap = SPAWN_MIN; lastTime = 0;
     bag = [];
     clearItems();
+    for(var i = 0; i < 3; i++) spawnItem();
     updateCounter();
+    el.timerBadge.textContent = '0.0초';
     el.counterBadge.hidden = false;
+    el.timerBadge.hidden = false;
     el.startOverlay.hidden = true;
     el.overOverlay.hidden = true;
     el.mistakeOverlay.hidden = true;
