@@ -325,6 +325,24 @@
   }
 
   // ---------- 떨어지는 아이템 ----------
+  // 매번 독립적으로 랜덤을 뽑으면 우연히 한쪽이 연달아 몰리기 쉬워서,
+  // 정해진 비율로 섞은 "가방"에서 하나씩 뽑고 다 떨어지면 다시 섞는 방식으로 고르게 배분한다
+  var BAG_SIZE = 10;
+  var bag = [];
+  function refillBag(){
+    bag = [];
+    var meatCount = Math.max(1, Math.round(BAG_SIZE * MEAT_CHANCE));
+    for(var i = 0; i < BAG_SIZE; i++) bag.push(i < meatCount ? 'meat' : 'leaf');
+    for(var j = bag.length - 1; j > 0; j--){
+      var k = Math.floor(Math.random() * (j + 1));
+      var tmp = bag[j]; bag[j] = bag[k]; bag[k] = tmp;
+    }
+  }
+  function nextType(){
+    if(bag.length === 0) refillBag();
+    return bag.pop();
+  }
+
   function getMouthPoint(){
     var qr = el.quokkaWrap.getBoundingClientRect();
     var pr = el.playArea.getBoundingClientRect();
@@ -337,7 +355,7 @@
   function spawnItem(){
     var r = el.playArea.getBoundingClientRect();
     if(r.width < ITEM_MARGIN * 2 + 10) return;
-    var type = Math.random() < MEAT_CHANCE ? 'meat' : 'leaf';
+    var type = nextType();
     var wrap = document.createElement('div');
     wrap.className = 'falling-item';
     if(type === 'leaf'){
@@ -467,6 +485,7 @@
     state = 'ready';
     count = 0; elapsed = 0; paused = false;
     spawnAcc = 0; nextSpawnGap = SPAWN_MIN; lastTime = 0;
+    bag = [];
     clearItems();
     updateCounter();
     el.counterBadge.hidden = false;
