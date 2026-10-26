@@ -79,7 +79,7 @@
     position:absolute; width:72px; height:72px;
     transform:translate(-50%,-50%);
     display:flex; align-items:center; justify-content:center;
-    touch-action:none; cursor:grab;
+    touch-action:none; cursor:pointer;
     z-index:2;
   }
   .falling-item img{
@@ -157,7 +157,7 @@
   <div class="play-area" id="playArea">
     <div class="quokka-wrap">
       <img class="quokka-img" id="quokkaImg" src="assets/quokka-eat-closed.webp" alt="쿼카">
-      <div class="hint hidden" id="hint">떨어지는 나뭇잎만 잡아서 쿼카 입으로 옮겨주세요!</div>
+      <div class="hint hidden" id="hint">떨어지는 나뭇잎을 콕콕 터치해서 먹여주세요!</div>
     </div>
   </div>
 </div>
@@ -200,7 +200,6 @@
   var FALL_SPEED = 240;        // px/초, 낙하 속도
   var SPAWN_MIN = 140, SPAWN_MAX = 240;  // 생성 간격(ms)
   var MEAT_CHANCE = 0.32;      // 고기가 나올 확률
-  var MOUTH_RADIUS = 46;       // 입으로 인정하는 거리(px)
   var ITEM_MARGIN = 44;        // 화면 좌우 여백(px)
 
   var EAT_CLOSED = 'assets/quokka-eat-closed.webp';
@@ -213,7 +212,6 @@
 
   var el = {
     playArea: document.getElementById('playArea'),
-    quokkaWrap: document.querySelector('.quokka-wrap'),
     counterBadge: document.getElementById('counterBadge'),
     counterNum: document.getElementById('counterNum'),
     counterGoal: document.getElementById('counterGoal'),
@@ -343,15 +341,6 @@
     return bag.pop();
   }
 
-  function getMouthPoint(){
-    var qr = el.quokkaWrap.getBoundingClientRect();
-    var pr = el.playArea.getBoundingClientRect();
-    return {
-      x: (qr.left - pr.left) + qr.width * 0.5,
-      y: (qr.top - pr.top) + qr.height * 0.335
-    };
-  }
-
   function spawnItem(){
     var r = el.playArea.getBoundingClientRect();
     if(r.width < ITEM_MARGIN * 2 + 10) return;
@@ -368,7 +357,7 @@
     wrap.style.left = x + 'px';
     wrap.style.top = y + 'px';
     el.playArea.appendChild(wrap);
-    var it = { el:wrap, type:type, x:x, y:y, grabbed:false, dragId:null };
+    var it = { el:wrap, type:type, x:x, y:y, grabbed:false };
     bindItemEvents(it);
     items.push(it);
   }
@@ -400,43 +389,14 @@
       if(state !== 'ready' && state !== 'playing') return;
       if(it.grabbed) return;
       e.preventDefault();
-      try { it.el.setPointerCapture(e.pointerId); } catch(err){}
-      it.grabbed = true;
-      it.dragId = e.pointerId;
-      it.el.style.cursor = 'grabbing';
-      it.startClientX = e.clientX; it.startClientY = e.clientY;
-      it.baseX = it.x; it.baseY = it.y;
+      it.grabbed = true;   // 중복 처리 방지용 플래그 (더 이상 드래그는 안 함, 터치 즉시 처리)
       el.hint.classList.add('hidden');
       if(state === 'ready'){ state = 'playing'; t0 = performance.now(); }
+      resolveFeed(it);
     });
-    it.el.addEventListener('pointermove', function(e){
-      if(!it.grabbed || e.pointerId !== it.dragId) return;
-      var dx = e.clientX - it.startClientX, dy = e.clientY - it.startClientY;
-      it.x = it.baseX + dx;
-      it.y = it.baseY + dy;
-      it.el.style.left = it.x + 'px';
-      it.el.style.top = it.y + 'px';
-      var m = getMouthPoint();
-      if(Math.hypot(it.x - m.x, it.y - m.y) <= MOUTH_RADIUS){
-        resolveFeed(it);
-      }
-    });
-    function endDrag(e){
-      if(!it.grabbed || e.pointerId !== it.dragId) return;
-      it.grabbed = false;
-      it.dragId = null;
-      it.el.style.cursor = 'grab';
-    }
-    it.el.addEventListener('pointerup', endDrag);
-    it.el.addEventListener('pointercancel', endDrag);
-    it.el.addEventListener('lostpointercapture', endDrag);
     it.el.addEventListener('touchstart', function(e){ e.preventDefault(); }, { passive:false });
     it.el.addEventListener('dragstart', function(e){ e.preventDefault(); });
   }
-  document.addEventListener('touchmove', function(e){
-    var anyDrag = items.some(function(it){ return it.grabbed; });
-    if(anyDrag) e.preventDefault();
-  }, { passive:false });
 
   function showMistake(){
     paused = true;
