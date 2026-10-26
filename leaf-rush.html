@@ -245,7 +245,7 @@
   el.resultHead.textContent = GOAL + '개 잘 골라 먹였다!';
 
   // ---------- 상태 ----------
-  var state = 'idle';   // idle | ready | playing | over
+  var state = 'idle';   // idle | playing | over
   var count = 0, t0 = 0, elapsed = 0;
   var paused = false;   // 실수 팝업 떠있는 동안 true (낙하/생성만 멈춤, 기록 시계는 계속 흐름)
   var items = [];        // 현재 떨어지고 있는 아이템들
@@ -395,12 +395,11 @@
 
   function bindItemEvents(it){
     it.el.addEventListener('pointerdown', function(e){
-      if(state !== 'ready' && state !== 'playing') return;
+      if(state !== 'playing') return;
       if(it.grabbed) return;
       e.preventDefault();
       it.grabbed = true;   // 중복 처리 방지용 플래그 (더 이상 드래그는 안 함, 터치 즉시 처리)
       el.hint.classList.add('hidden');
-      if(state === 'ready'){ state = 'playing'; t0 = performance.now(); }
       resolveFeed(it);
     });
     it.el.addEventListener('touchstart', function(e){ e.preventDefault(); }, { passive:false });
@@ -424,7 +423,7 @@
     if(!lastTime) lastTime = now;
     var dt = Math.min((now - lastTime) / 1000, 1 / 20);
     lastTime = now;
-    if((state === 'ready' || state === 'playing') && !paused){
+    if(state === 'playing' && !paused){
       spawnAcc += dt * 1000;
       if(spawnAcc >= nextSpawnGap){
         spawnAcc = 0;
@@ -454,7 +453,8 @@
 
   // ---------- 진행 ----------
   function startGame(){
-    state = 'ready';
+    state = 'playing';
+    t0 = performance.now();
     count = 0; elapsed = 0; paused = false;
     spawnAcc = 0; nextSpawnGap = SPAWN_MIN; lastTime = 0;
     bag = [];
