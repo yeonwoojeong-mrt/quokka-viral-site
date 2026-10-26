@@ -157,6 +157,7 @@
     <div class="counter-badge" id="counterBadge" hidden>나뭇잎 <b id="counterNum">0</b>/<span id="counterGoal">30</span></div>
     <div class="timer-badge" id="timerBadge" hidden>0.0초</div>
     <div style="flex:1"></div>
+    <button class="sound-toggle" id="restartBtn" aria-label="다시 시작" hidden>↻</button>
     <button class="sound-toggle" id="soundToggle" aria-label="소리 켜기/끄기">🔊</button>
   </div>
 
@@ -220,6 +221,7 @@
     playArea: document.getElementById('playArea'),
     counterBadge: document.getElementById('counterBadge'),
     timerBadge: document.getElementById('timerBadge'),
+    restartBtn: document.getElementById('restartBtn'),
     counterNum: document.getElementById('counterNum'),
     counterGoal: document.getElementById('counterGoal'),
     quokkaImg: document.getElementById('quokkaImg'),
@@ -462,6 +464,7 @@
     el.timerBadge.textContent = '0.0초';
     el.counterBadge.hidden = false;
     el.timerBadge.hidden = false;
+    el.restartBtn.hidden = false;
     el.startOverlay.hidden = true;
     el.overOverlay.hidden = true;
     el.mistakeOverlay.hidden = true;
@@ -482,6 +485,7 @@
   }
 
   el.startBtn.addEventListener('click', startGame);
+  el.restartBtn.addEventListener('click', startGame);
   el.retryBtn.addEventListener('click', startGame);
   el.applyBtn.addEventListener('click', function(){
     window.open(APPLY_URL, '_blank', 'noopener,noreferrer');
