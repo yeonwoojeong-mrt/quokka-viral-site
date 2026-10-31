@@ -549,11 +549,12 @@
     el.resultBest.classList.remove('new');
     el.overOverlay.hidden = false;
 
-    var insertReq = logEvent('game_complete', elapsed);
-    if(!insertReq){
+    var insertReqRaw = logEvent('game_complete', elapsed);
+    if(!insertReqRaw){
       el.resultBest.textContent = '';
       return;
     }
+    var insertReq = Promise.resolve(insertReqRaw); // thenable을 실제 Promise로 한 번만 감싸서, 여러 번 .then()해도 insert가 중복 실행되지 않게 함
     insertReq.then(function(){
       return sbClient.from('best_times').select('best_value').eq('game', GAME_NAME).single();
     }).then(function(res){
@@ -566,9 +567,13 @@
       el.resultBest.textContent = '';
     });
 
-    sbClient.from('leaderboard').select('nickname,value').eq('game', GAME_NAME).order('value', { ascending:true }).limit(5)
-      .then(function(res){ renderLeaderboard(res && res.data || []); })
-      .catch(function(){ el.leaderboard.innerHTML = ''; });
+    insertReq.then(function(){
+      return sbClient.from('leaderboard').select('nickname,value').eq('game', GAME_NAME).order('value', { ascending:true }).limit(5);
+    }).then(function(res){
+      renderLeaderboard(res && res.data || []);
+    }).catch(function(){
+      el.leaderboard.innerHTML = '';
+    });
   }
 
   function renderLeaderboard(rows){
