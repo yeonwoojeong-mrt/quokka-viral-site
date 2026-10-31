@@ -24,7 +24,9 @@
   }
   [hidden]{ display:none!important; }
   html,body{height:100%;}
+  html{ position:fixed; overflow:hidden; width:100%; }
   body{
+    position:fixed; inset:0;
     margin:0;
     font-family:var(--font-display);
     color:var(--ink);
@@ -505,8 +507,8 @@
 
   // ---------- 쿼카 캔버스 합성 (기존 로직 재사용) ----------
   var FACE_SHAPE_POINTS = [
-    { x: 317, y: 55 },{ x: 375, y: 50 },{ x: 420, y: 110 },{ x: 380, y: 175 },
-    { x: 300, y: 195 },{ x: 230, y: 170 },{ x: 205, y: 105 },{ x: 260, y: 48 }
+    { x: 317, y: 60 },{ x: 365, y: 55 },{ x: 400, y: 120 },{ x: 385, y: 200 },
+    { x: 300, y: 230 },{ x: 245, y: 200 },{ x: 225, y: 115 },{ x: 270, y: 52 }
   ];
   function faceBBox(points){
     var xs=points.map(function(p){return p.x;}), ys=points.map(function(p){return p.y;});
@@ -672,7 +674,7 @@
 
     if(opts.input){
       el.questInput.value = '';
-      setTimeout(function(){ el.questInput.focus(); }, 150);
+      setTimeout(function(){ el.questInput.focus({ preventScroll:true }); }, 150);
     }
     if(opts.buttons && opts.buttons.length){
       el.questActions.hidden = false;
@@ -1121,7 +1123,7 @@
 
   function submitName(){
     var value = el.questInput.value.trim().slice(0,8);
-    if(!value){ el.questInput.focus(); return; }
+    if(!value){ el.questInput.focus({ preventScroll:true }); return; }
     logEvent('game_start');
     state.name = value;
     save(KEYS.name, value);
