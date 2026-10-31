@@ -198,9 +198,33 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   'use strict';
+
+  // ---------- 성과 트래킹 (Supabase) ----------
+  var SUPABASE_URL = 'https://anpikmfeszdpghkbntft.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_QupBa7fFZ2drK4ubwAC_zA_y-091fEG';
+  var GAME_NAME = 'leaf_rush';
+  var sbClient = null;
+  try { sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e){}
+  var VID_KEY = 'mrtGameVisitorId';
+  var visitorId = '';
+  try {
+    visitorId = localStorage.getItem(VID_KEY);
+    if(!visitorId){
+      visitorId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('v-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+      localStorage.setItem(VID_KEY, visitorId);
+    }
+  } catch(e){ visitorId = 'v-' + Math.random().toString(36).slice(2); }
+  function logEvent(eventType){
+    if(!sbClient) return;
+    try {
+      sbClient.from('events').insert({ event_type:eventType, game:GAME_NAME, visitor_id:visitorId }).then(function(){}, function(){});
+    } catch(e){}
+  }
+  logEvent('visit');
 
   var GOAL = 30;
   var APPLY_URL = 'https://www.myrealtrip.com';
@@ -251,6 +275,9 @@
   var items = [];        // 현재 떨어지고 있는 아이템들
 
   var BEST_KEY = 'leafRush.bestTime';
+  if(location.search.indexOf('reset=1') !== -1 || location.hash === '#reset'){
+    try { localStorage.removeItem(BEST_KEY); } catch(e){}
+  }
   var bestTime = 0;
   try { bestTime = parseFloat(localStorage.getItem(BEST_KEY)) || 0; } catch(e){}
   function saveBest(){ try { localStorage.setItem(BEST_KEY, String(bestTime)); } catch(e){} }
@@ -453,6 +480,7 @@
 
   // ---------- 진행 ----------
   function startGame(){
+    logEvent('game_start');
     state = 'playing';
     t0 = performance.now();
     count = 0; elapsed = 0; paused = false;
@@ -473,6 +501,7 @@
   }
 
   function finishGame(){
+    logEvent('game_complete');
     state = 'over';
     elapsed = (performance.now() - t0) / 1000;
     clearItems();
@@ -488,6 +517,7 @@
   el.restartBtn.addEventListener('click', startGame);
   el.retryBtn.addEventListener('click', startGame);
   el.applyBtn.addEventListener('click', function(){
+    logEvent('apply_click');
     window.open(APPLY_URL, '_blank', 'noopener,noreferrer');
   });
 
@@ -516,6 +546,7 @@
   }
   el.shareBtn.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
   el.shareBtn.addEventListener('click', function(){
+    logEvent('share_click');
     var text = shareText();
     var file = null;
     try { file = resultImageFile(); } catch(e){}
