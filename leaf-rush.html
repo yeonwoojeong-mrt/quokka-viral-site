@@ -113,7 +113,29 @@
   .card p.desc{ font-size:14.5px; line-height:1.55; margin:0 0 20px; color:var(--ink); opacity:.85; }
   .card .result-head{ font-size:15px; font-weight:700; margin:0 0 4px; color:var(--accent); }
   .card .result-time{ font-size:44px; font-weight:700; margin:0 0 4px; font-variant-numeric:tabular-nums; }
-  .card .result-best{ font-size:14px; font-weight:700; opacity:.7; margin:0 0 20px; }
+  .card .result-best{ font-size:14px; font-weight:700; opacity:.7; margin:0 0 10px; }
+  .leaderboard{
+    list-style:none; margin:0 0 18px; padding:0;
+    text-align:left; font-size:13px; max-height:160px; overflow-y:auto;
+  }
+  .leaderboard:empty{ margin:0 0 4px; }
+  .leaderboard li{
+    display:flex; align-items:center; gap:8px;
+    padding:5px 8px; border-radius:8px; color:var(--ink);
+  }
+  .leaderboard li .rank{ width:18px; flex:none; opacity:.55; font-weight:700; }
+  .leaderboard li .nick{ flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .leaderboard li .time{ flex:none; font-variant-numeric:tabular-nums; opacity:.8; }
+  .leaderboard li.me{ background:#ffe9d9; font-weight:700; }
+  .leaderboard li.me .rank{ opacity:1; color:var(--accent); }
+  .leaderboard li.me .time{ opacity:1; color:var(--accent); }
+  .name-input{
+    width:100%; box-sizing:border-box; font-family:inherit;
+    font-size:16px; text-align:center; color:var(--ink);
+    background:#faf3e6; border:2px solid rgba(0,0,0,.15);
+    border-radius:12px; padding:12px; margin-bottom:12px;
+  }
+  .name-input:focus{ outline:none; border-color:var(--accent); }
   .card .result-best.new{
     color:var(--accent); opacity:1; font-size:16px;
     animation:bestPop .6s cubic-bezier(.2,1.6,.4,1) both, bestBounce 1.4s ease-in-out .6s infinite;
@@ -173,6 +195,7 @@
   <div class="card">
     <h1>🍃 나뭇잎 러시</h1>
     <p class="desc">위에서 나뭇잎이랑 고기가 같이 떨어져요!<br>나뭇잎 <b id="startGoalText">30</b>개만 골라서<br>쿼카한테 빨리 줘보세요 🍖🚫</p>
+    <input class="name-input" id="nicknameInput" type="text" placeholder="닉네임 (최대 8자)" maxlength="8">
     <button class="btn primary pulse" id="startBtn">시작하기</button>
   </div>
 </div>
@@ -182,6 +205,7 @@
     <p class="result-head" id="resultHead">30개 잘 골라 먹였다!</p>
     <p class="result-time" id="resultTime">0.00초</p>
     <p class="result-best" id="resultBest">전체 최고기록 확인 중...</p>
+    <ol class="leaderboard" id="leaderboard"></ol>
     <button class="btn primary pulse" id="applyBtn">호주 공짜여행 응모하기</button>
     <div class="btn-row">
       <button class="btn secondary small" id="shareBtn">공유하기</button>
@@ -222,6 +246,7 @@
     if(!sbClient) return null;
     var row = { event_type:eventType, game:GAME_NAME, visitor_id:visitorId };
     if(value != null) row.value = value;
+    if(nickname) row.nickname = nickname;
     try {
       return sbClient.from('events').insert(row);
     } catch(e){ return null; }
@@ -264,10 +289,12 @@
     startOverlay: document.getElementById('startOverlay'),
     startGoalText: document.getElementById('startGoalText'),
     startBtn: document.getElementById('startBtn'),
+    nicknameInput: document.getElementById('nicknameInput'),
     overOverlay: document.getElementById('overOverlay'),
     resultHead: document.getElementById('resultHead'),
     resultTime: document.getElementById('resultTime'),
     resultBest: document.getElementById('resultBest'),
+    leaderboard: document.getElementById('leaderboard'),
     applyBtn: document.getElementById('applyBtn'),
     shareBtn: document.getElementById('shareBtn'),
     retryBtn: document.getElementById('retryBtn'),
@@ -286,6 +313,13 @@
   var items = [];        // 현재 떨어지고 있는 아이템들
 
   var globalBest = null; // 전체 유저 중 최고기록(초) — Supabase에서 받아옴, 공유 이미지 등에 재사용
+
+  var NICK_KEY = 'mrtGameNickname';
+  var nickname = '';
+  try {
+    var savedNick = localStorage.getItem(NICK_KEY);
+    if(savedNick) el.nicknameInput.value = savedNick;
+  } catch(e){}
 
   // ---------- 사운드 (합성음) ----------
   var soundOn = true;
@@ -500,6 +534,7 @@
     el.restartBtn.hidden = false;
     el.startOverlay.hidden = true;
     el.overOverlay.hidden = true;
+    el.leaderboard.innerHTML = '';
     el.mistakeOverlay.hidden = true;
     el.hint.classList.remove('hidden');
     getAudioCtx();
@@ -530,9 +565,35 @@
     }).catch(function(){
       el.resultBest.textContent = '';
     });
+
+    sbClient.from('leaderboard').select('nickname,value').eq('game', GAME_NAME).order('value', { ascending:true }).limit(5)
+      .then(function(res){ renderLeaderboard(res && res.data || []); })
+      .catch(function(){ el.leaderboard.innerHTML = ''; });
   }
 
-  el.startBtn.addEventListener('click', startGame);
+  function renderLeaderboard(rows){
+    el.leaderboard.innerHTML = '';
+    rows.forEach(function(row, i){
+      var li = document.createElement('li');
+      var isMe = row.nickname === nickname && Math.abs(parseFloat(row.value) - elapsed) < 0.005;
+      if(isMe) li.className = 'me';
+      li.innerHTML = '<span class="rank">' + (i+1) + '</span>'
+        + '<span class="nick"></span>'
+        + '<span class="time">' + parseFloat(row.value).toFixed(2) + '초</span>';
+      li.querySelector('.nick').textContent = row.nickname;
+      el.leaderboard.appendChild(li);
+    });
+  }
+
+  el.nicknameInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); el.startBtn.click(); }
+  });
+  el.startBtn.addEventListener('click', function(){
+    var nick = (el.nicknameInput.value || '').trim().slice(0,8) || '익명';
+    nickname = nick;
+    try { localStorage.setItem(NICK_KEY, nick); } catch(e){}
+    startGame();
+  });
   el.restartBtn.addEventListener('click', startGame);
   el.retryBtn.addEventListener('click', startGame);
   el.applyBtn.addEventListener('click', function(){
