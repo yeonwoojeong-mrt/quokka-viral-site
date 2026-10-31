@@ -386,9 +386,33 @@
 </div>
 <input type="file" id="facePicker" accept="image/*" hidden>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function(){
   var APPLY_URL = 'https://www.myrealtrip.com';
+
+  // ---------- 성과 트래킹 (Supabase) ----------
+  var SUPABASE_URL = 'https://anpikmfeszdpghkbntft.supabase.co';
+  var SUPABASE_KEY = 'sb_publishable_QupBa7fFZ2drK4ubwAC_zA_y-091fEG';
+  var GAME_NAME = 'quokka_island';
+  var sbClient = null;
+  try { sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); } catch(e){}
+  var VID_KEY = 'mrtGameVisitorId';
+  var visitorId = '';
+  try {
+    visitorId = localStorage.getItem(VID_KEY);
+    if(!visitorId){
+      visitorId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('v-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+      localStorage.setItem(VID_KEY, visitorId);
+    }
+  } catch(e){ visitorId = 'v-' + Math.random().toString(36).slice(2); }
+  function logEvent(eventType){
+    if(!sbClient) return;
+    try {
+      sbClient.from('events').insert({ event_type:eventType, game:GAME_NAME, visitor_id:visitorId }).then(function(){}, function(){});
+    } catch(e){}
+  }
+  logEvent('visit');
   var PET_GOAL = 20;
   var BABY_PET_GOAL = 10;
   var LEAF_GOAL = 5;
@@ -413,7 +437,7 @@
 
   var state = {
     name: load(KEYS.name, ''),
-    phase: load(KEYS.phase, 'welcome'), // welcome -> naming -> photoChoice -> petting -> leafFound -> feeding -> babyArrived -> finaleIntro -> done
+    phase: load(KEYS.phase, 'welcome'), // welcome -> naming -> photoChoice -> petting -> leafFound -> feeding -> babyArrived -> finaleIntro
     pets: parseInt(load(KEYS.pets, '0'), 10) || 0,
     babyPets: parseInt(load(KEYS.babyPets, '0'), 10) || 0,
     leafFed: parseInt(load(KEYS.leafFed, '0'), 10) || 0
@@ -733,6 +757,7 @@
       bumpTracker();
 
       if(state.babyPets >= BABY_PET_GOAL){
+        logEvent('game_complete');
         enterFinaleIntro();
       }
     }
@@ -781,6 +806,7 @@
   var dragState = { active:false, el:null, offX:0, offY:0 };
 
   function enterLeafFound(){
+    if(state.phase !== 'leafFound') logEvent('phase_leafFound');
     state.phase = 'leafFound';
     save(KEYS.phase, state.phase);
     updateTracker();
@@ -791,6 +817,7 @@
   }
 
   function enterFeeding(){
+    if(state.phase !== 'feeding') logEvent('phase_feeding');
     state.phase = 'feeding';
     save(KEYS.phase, state.phase);
     setBackground(1);
@@ -857,6 +884,9 @@
     leafEl.addEventListener('touchend', function(e){
       var t = e.changedTouches[0]; leafPointerUp(t.clientX, t.clientY);
     });
+    leafEl.addEventListener('touchcancel', function(e){
+      var t = e.changedTouches[0]; leafPointerUp(t.clientX, t.clientY);
+    });
   });
   window.addEventListener('mousemove', function(e){ if(dragState.active) leafPointerMove(e.clientX, e.clientY); });
   window.addEventListener('mouseup', function(e){ if(dragState.active) leafPointerUp(e.clientX, e.clientY); });
@@ -903,6 +933,7 @@
   }
 
   function enterBabyArrived(){
+    logEvent('phase_babyArrived');
     state.phase = 'babyArrived';
     save(KEYS.phase, state.phase);
     skipFaceOverlay = false;
@@ -945,10 +976,29 @@
       text: '그거 알아요?\n서호주에는 실제로 쿼카 1만 마리가 살고 있는\n로트네스트라는 섬이 있답니다!!',
       tag: '🐾 ' + (state.name || '쿼카'),
       compact: true,
-      buttons: [ { label:'공짜로 서호주 여행가기', pulse:true, action: function(){
-        window.open(APPLY_URL, '_blank', 'noopener,noreferrer');
-      } } ]
+      buttons: [
+        { label:'공짜로 서호주 여행가기', pulse:true, action: function(){
+          logEvent('apply_click');
+          window.open(APPLY_URL, '_blank', 'noopener,noreferrer');
+        } },
+        { label:'친구에게 공유하기', secondary:true, action: shareQuokkaIsland }
+      ]
     });
+  }
+
+  function shareQuokkaIsland(){
+    logEvent('share_click');
+    var text = (state.name || '쿼카') + '와 함께한 쿼카섬 이야기!\n서호주로 무료 여행 갈 기회도 있어요\n'
+      + location.href.split(/[?#]/)[0] + '\n#쿼카섬 #호주여행';
+    if(navigator.share){
+      navigator.share({ text:text }).catch(function(){});
+      return;
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){
+        showToast('링크를 복사했어요!');
+      }).catch(function(){});
+    }
   }
 
   // ---------- 얼굴 편집기 (기존 로직 재사용) ----------
@@ -1047,6 +1097,7 @@
 
   // ---------- 플로우 진행 ----------
   function enterPetting(){
+    if(state.phase !== 'petting') logEvent('phase_petting');
     state.phase = 'petting';
     save(KEYS.phase, state.phase);
     hideQuest();
@@ -1056,6 +1107,7 @@
   }
 
   function enterPhotoChoice(){
+    if(state.phase !== 'photoChoice') logEvent('phase_photoChoice');
     state.phase = 'photoChoice';
     save(KEYS.phase, state.phase);
     showQuest({
@@ -1070,6 +1122,7 @@
   function submitName(){
     var value = el.questInput.value.trim().slice(0,8);
     if(!value){ el.questInput.focus(); return; }
+    logEvent('game_start');
     state.name = value;
     save(KEYS.name, value);
     el.nameTagText.textContent = value;
