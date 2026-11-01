@@ -391,12 +391,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/faceapi/face-api.min.js"></script>
 <script>
-window.addEventListener('error', function(e){
-  try { alert('[디버그] JS 에러: ' + e.message + ' (줄 ' + e.lineno + ')'); } catch(err){}
-});
-window.addEventListener('unhandledrejection', function(e){
-  try { alert('[디버그] Promise 에러: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)); } catch(err){}
-});
 (function(){
   var APPLY_URL = 'https://www.myrealtrip.com';
 
@@ -1116,12 +1110,25 @@ window.addEventListener('unhandledrejection', function(e){
     return { x: sx/pts.length, y: sy/pts.length };
   }
   // 업로드한 사진에서 눈 위치를 자동으로 찾는다. 실패하면(동물 사진 등) null로 알려줘서 수동 모드로 넘어가게 함
+  // face-api.js는 HTMLImageElement/HTMLCanvasElement/HTMLVideoElement만 받아들여서,
+  // createImageBitmap으로 읽어온 사진(ImageBitmap)은 캔버스로 한 번 그려서 넘겨줘야 함
+  function toDetectableElement(imgEl){
+    if(imgEl instanceof HTMLImageElement || imgEl instanceof HTMLCanvasElement || imgEl instanceof HTMLVideoElement){
+      return imgEl;
+    }
+    var w = imgEl.width || imgEl.naturalWidth, h = imgEl.height || imgEl.naturalHeight;
+    var c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(imgEl, 0, 0, w, h);
+    return c;
+  }
   function tryAutoDetectEyes(imgEl, onDone){
     var done = false;
     function finish(v){ if(done) return; done = true; onDone(v); }
     try {
       if(!faceApiReady || !window.faceapi){ finish(null); return; }
-      faceapi.detectSingleFace(imgEl, new faceapi.TinyFaceDetectorOptions({ inputSize:224 }))
+      var detectInput = toDetectableElement(imgEl);
+      faceapi.detectSingleFace(detectInput, new faceapi.TinyFaceDetectorOptions({ inputSize:224 }))
         .withFaceLandmarks(true)
         .then(function(result){
           if(!result){ finish(null); return; }
