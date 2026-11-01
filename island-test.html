@@ -278,6 +278,8 @@
     border-radius:12px; padding:12px; margin-top:10px;
   }
   .quest-input:focus{ outline:none; border-color:var(--accent); }
+  .quest-input.shake{ animation:inputShake .4s ease; }
+  @keyframes inputShake{ 0%,100%{transform:translateX(0);} 20%{transform:translateX(-6px);} 40%{transform:translateX(6px);} 60%{transform:translateX(-4px);} 80%{transform:translateX(4px);} }
 
   .quest-btn.pulse{
     animation:ctaPulse 1.3s ease-in-out infinite;
@@ -365,7 +367,7 @@
 <div class="quest-dialogue" id="questDialogue" hidden>
   <div class="quest-tag" id="questTag">🏝️ 쿼카섬 안내소</div>
   <div class="quest-text" id="questText"></div>
-  <input class="quest-input" id="questInput" type="text" maxlength="8" placeholder="예: 복슬이" autocomplete="off" hidden>
+  <input class="quest-input" id="questInput" type="text" enterkeyhint="done" maxlength="8" placeholder="예: 복슬이" autocomplete="off" hidden>
   <div class="quest-actions" id="questActions" hidden></div>
   <div class="quest-next" id="questNext" hidden>눌러서 계속 ▼</div>
 </div>
@@ -668,7 +670,7 @@
   }
 
   // ---------- 퀘스트 말풍선 ----------
-  function hideQuest(){ el.questDialogue.hidden = true; }
+  function hideQuest(){ el.questInput.blur(); el.questDialogue.hidden = true; }
   function showQuest(opts){
     // opts: { text, tag, input:bool, buttons:[{label, action, secondary}], tapToContinue:fn }
     el.questDialogue.hidden = false;
@@ -685,6 +687,8 @@
     if(opts.input){
       el.questInput.value = '';
       setTimeout(function(){ el.questInput.focus(); }, 150);
+    } else {
+      el.questInput.blur();
     }
     if(opts.buttons && opts.buttons.length){
       el.questActions.hidden = false;
@@ -1133,7 +1137,12 @@
 
   function submitName(){
     var value = el.questInput.value.trim().slice(0,8);
-    if(!value){ el.questInput.focus(); return; }
+    if(!value){
+      el.questInput.classList.remove('shake');
+      void el.questInput.offsetWidth;
+      el.questInput.classList.add('shake');
+      return;
+    }
     el.questInput.blur();
     logEvent('game_start');
     state.name = value;
