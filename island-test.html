@@ -262,12 +262,19 @@
   @keyframes nextBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(4px); } }
 
   .quest-actions{ display:flex; gap:8px; margin-top:14px; }
+  .quest-actions.stacked{ flex-direction:column; align-items:center; }
   .quest-btn{
     flex:1; font-family:var(--font-display); font-size:14.5px;
     color:var(--paper); background:var(--accent); border:none;
     padding:12px; border-radius:12px; cursor:pointer;
   }
+  .quest-actions.stacked .quest-btn{ width:100%; }
   .quest-btn.secondary{ background:#eee3d0; color:var(--ink); }
+  .quest-btn.link{
+    flex:none; width:auto; background:none; box-shadow:none;
+    color:var(--ink); opacity:.6; text-decoration:underline;
+    font-size:13px; padding:4px 8px;
+  }
   .quest-btn:active{ transform:scale(.97); }
 
   .quest-input{
@@ -676,9 +683,10 @@
     }
     if(opts.buttons && opts.buttons.length){
       el.questActions.hidden = false;
+      el.questActions.classList.toggle('stacked', opts.buttons.some(function(b){ return b.link; }));
       opts.buttons.forEach(function(b){
         var btn = document.createElement('button');
-        btn.className = 'quest-btn' + (b.secondary ? ' secondary' : '') + (b.pulse ? ' pulse' : '');
+        btn.className = 'quest-btn' + (b.secondary ? ' secondary' : '') + (b.pulse ? ' pulse' : '') + (b.link ? ' link' : '');
         btn.textContent = b.label;
         btn.addEventListener('click', function(ev){ ev.stopPropagation(); b.action(); });
         el.questActions.appendChild(btn);
@@ -981,7 +989,7 @@
           logEvent('apply_click');
           window.open(APPLY_URL, '_blank', 'noopener,noreferrer');
         } },
-        { label:'친구에게 공유하기', secondary:true, action: shareQuokkaIsland }
+        { label:'친구에게 공유하기', link:true, action: shareQuokkaIsland }
       ]
     });
   }
