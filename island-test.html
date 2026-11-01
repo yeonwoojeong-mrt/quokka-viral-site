@@ -24,14 +24,11 @@
   }
   [hidden]{ display:none!important; }
   html,body{height:100%;}
-  html{ position:fixed; overflow:hidden; width:100%; }
   body{
-    position:fixed; inset:0;
     margin:0;
     font-family:var(--font-display);
     color:var(--ink);
     background:#1b1330;
-    overflow:hidden;
     touch-action:manipulation;
   }
 
@@ -221,7 +218,7 @@
   .sound-toggle:active{ transform:scale(.94); }
 
   .quest-dialogue{
-    position:fixed; left:50%; bottom:calc(60px + env(safe-area-inset-bottom,0px));
+    position:absolute; left:50%; bottom:calc(60px + env(safe-area-inset-bottom,0px));
     transform:translateX(-50%);
     width:min(92vw,380px);
     background:var(--card-bg);
@@ -675,7 +672,7 @@
 
     if(opts.input){
       el.questInput.value = '';
-      setTimeout(function(){ el.questInput.focus({ preventScroll:true }); }, 150);
+      setTimeout(function(){ el.questInput.focus(); }, 150);
     }
     if(opts.buttons && opts.buttons.length){
       el.questActions.hidden = false;
@@ -1124,7 +1121,7 @@
 
   function submitName(){
     var value = el.questInput.value.trim().slice(0,8);
-    if(!value){ el.questInput.focus({ preventScroll:true }); return; }
+    if(!value){ el.questInput.focus(); return; }
     logEvent('game_start');
     state.name = value;
     save(KEYS.name, value);
