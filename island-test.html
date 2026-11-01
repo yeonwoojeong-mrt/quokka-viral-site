@@ -1134,6 +1134,7 @@
   function submitName(){
     var value = el.questInput.value.trim().slice(0,8);
     if(!value){ el.questInput.focus(); return; }
+    el.questInput.blur();
     logEvent('game_start');
     state.name = value;
     save(KEYS.name, value);
