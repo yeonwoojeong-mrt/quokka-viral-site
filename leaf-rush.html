@@ -631,34 +631,6 @@
     g.arcTo(x, y, x+w, y, r);
     g.closePath();
   }
-  function drawSpeechBubble(g, cx, tailTipX, tailTipY, text){
-    g.font = '700 24px "DOS Saemmul"';
-    var padX = 22, padY = 16;
-    var textW = g.measureText(text).width;
-    var bw = textW + padX*2, bh = 24 + padY*2;
-    var bx = cx - bw/2, by = tailTipY - bh - 14;
-    g.save();
-    g.shadowColor = 'rgba(0,0,0,.18)'; g.shadowBlur = 10; g.shadowOffsetY = 4;
-    roundedRectPath(g, bx, by, bw, bh, bh/2);
-    g.fillStyle = '#fffdf8'; g.fill();
-    g.restore();
-    roundedRectPath(g, bx, by, bw, bh, bh/2);
-    g.lineWidth = 2.5; g.strokeStyle = '#3a2a1c'; g.stroke();
-    g.beginPath();
-    g.moveTo(tailTipX-11, by+bh-2);
-    g.lineTo(tailTipX+11, by+bh-2);
-    g.lineTo(tailTipX, tailTipY);
-    g.closePath();
-    g.fillStyle = '#fffdf8'; g.fill();
-    g.beginPath();
-    g.moveTo(tailTipX-11, by+bh-4);
-    g.lineTo(tailTipX, tailTipY);
-    g.lineTo(tailTipX+11, by+bh-4);
-    g.strokeStyle = '#3a2a1c'; g.lineWidth = 2.5; g.stroke();
-    g.fillStyle = '#33251a'; g.textAlign = 'center'; g.textBaseline = 'middle';
-    g.font = '700 24px "DOS Saemmul"';
-    g.fillText(text, cx, by+bh/2+1);
-  }
   function resultImageFile(){
     var W = 600, H = 800;
     var c = document.createElement('canvas');
@@ -679,7 +651,6 @@
       g.shadowColor = 'rgba(0,0,0,.25)'; g.shadowBlur = 24; g.shadowOffsetY = 14;
       g.drawImage(shareHeroImg, (W-heroW)/2, 150, heroW, heroH);
       g.restore();
-      drawSpeechBubble(g, W/2+30, W/2, 158, '🍃 나뭇잎 줘서 고마워 ><');
     }
 
     // 하단 결과 카드
