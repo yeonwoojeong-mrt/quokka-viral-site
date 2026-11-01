@@ -342,7 +342,7 @@
       <div class="particle-layer" id="particleLayer"></div>
       <canvas class="quokka" id="quokkaCanvas" width="600" height="630" role="img" aria-label="쿼카"></canvas>
       <div class="family-wrap" id="familyWrap">
-        <canvas class="family-img" id="familyCanvas" role="img" aria-label="엄마와 아기 쿼카"></canvas>
+        <img class="family-img" id="familyImg" src="assets/quokka-family-together.webp" alt="엄마와 아기 쿼카">
       </div>
       <div class="hint hidden" id="hint">쿼카를 톡톡 쓰다듬어보세요</div>
       <button class="tap-target" id="quokkaBtn" aria-label="쿼카 쓰다듬기"></button>
@@ -389,7 +389,6 @@
 <input type="file" id="facePicker" accept="image/*" hidden>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="assets/faceapi/face-api.min.js"></script>
 <script>
 (function(){
   var APPLY_URL = 'https://www.myrealtrip.com';
@@ -429,7 +428,6 @@
     sound: 'qi-sound-v1'
   };
 
-  // Netlify 정식 배포가 아닌 곳(아티팩트 등 테스트 환경)에서는 매번 처음부터 시작하게 함
   var IS_PRODUCTION = location.hostname.indexOf('netlify.app') !== -1;
   if (!IS_PRODUCTION || location.search.indexOf('reset=1') !== -1) {
     try { Object.keys(KEYS).forEach(function(k){ localStorage.removeItem(KEYS[k]); }); } catch(e){}
@@ -459,7 +457,7 @@
     quokkaBtn: document.getElementById('quokkaBtn'),
     quokkaCanvas: document.getElementById('quokkaCanvas'),
     familyWrap: document.getElementById('familyWrap'),
-    familyCanvas: document.getElementById('familyCanvas'),
+    familyImg: document.getElementById('familyImg'),
     finaleVideoWrap: document.getElementById('finaleVideoWrap'),
     finaleVideo: document.getElementById('finaleVideo'),
     hint: document.getElementById('hint'),
@@ -510,8 +508,8 @@
 
   // ---------- 쿼카 캔버스 합성 (기존 로직 재사용) ----------
   var FACE_SHAPE_POINTS = [
-    { x: 323, y: 56 },{ x: 388, y: 63 },{ x: 425, y: 140 },{ x: 375, y: 223 },
-    { x: 288, y: 228 },{ x: 217, y: 195 },{ x: 198, y: 100 },{ x: 265, y: 39 }
+    { x: 317, y: 60 },{ x: 365, y: 55 },{ x: 400, y: 120 },{ x: 385, y: 200 },
+    { x: 300, y: 230 },{ x: 245, y: 200 },{ x: 225, y: 115 },{ x: 270, y: 52 }
   ];
   function faceBBox(points){
     var xs=points.map(function(p){return p.x;}), ys=points.map(function(p){return p.y;});
@@ -534,113 +532,27 @@
   var baseImg = new Image();
   baseImg.src = 'assets/quokka-1.webp';
   var faceImg=null, faceZoomApplied=1, facePanXApplied=0, facePanYApplied=0;
-  var skipFaceOverlay = false; // 사진을 아예 안 쓰기로 한 경우에만 true
-  var currentPose = 'main'; // 'main' | 'eat' — 지금 보여주는 쿼카 포즈(얼굴 자리가 달라짐)
+  var skipFaceOverlay = false; // 먹이 주는 포즈 사진은 비율이 달라서 그동안은 얼굴합성 끔
   var canvasCtx = el.quokkaCanvas.getContext('2d');
-
-  // ---------- 얼굴 자동 정렬(눈 위치 기준) ----------
-  // 기준(quokka-1.webp)에서 손으로 맞춘 FACE_SHAPE_POINTS를, 각 포즈 사진의 눈 위치로 자동 변환해서 재사용한다
-  var FACE_REF_EYES = { L:{x:270,y:90}, R:{x:348,y:100} };
-  var detectedEyeL = null, detectedEyeR = null; // 업로드한 사진에서 자동 인식된 눈 위치(실패 시 null → 수동 모드)
-
-  function transformPoints(pts, srcL, srcR, dstL, dstR){
-    var sv={x:srcR.x-srcL.x,y:srcR.y-srcL.y}, dv={x:dstR.x-dstL.x,y:dstR.y-dstL.y};
-    var sdist=Math.hypot(sv.x,sv.y), ddist=Math.hypot(dv.x,dv.y);
-    var scale = ddist/(sdist||1);
-    var rot = Math.atan2(dv.y,dv.x) - Math.atan2(sv.y,sv.x);
-    var cos=Math.cos(rot), sin=Math.sin(rot);
-    return pts.map(function(p){
-      var rx=p.x-srcL.x, ry=p.y-srcL.y;
-      var rrx=(rx*cos-ry*sin)*scale, rry=(rx*sin+ry*cos)*scale;
-      return { x:rrx+dstL.x, y:rry+dstL.y };
-    });
-  }
-  var EAT_EYES = { L:{x:230,y:128}, R:{x:345,y:112} };
-  var EAT_SHAPE_POINTS = transformPoints(
-    FACE_SHAPE_POINTS.map(function(p){return {x:p.x,y:p.y};}),
-    FACE_REF_EYES.L, FACE_REF_EYES.R, EAT_EYES.L, EAT_EYES.R
-  );
-
-  var POSE_CONFIG = {
-    main: { mask: FACE_SHAPE_POINTS, eyes: FACE_REF_EYES },
-    eat:  { mask: EAT_SHAPE_POINTS,  eyes: EAT_EYES }
-  };
-
-  function drawAlignedFace(ctx, img, srcL, srcR, dstL, dstR){
-    var sv={x:srcR.x-srcL.x,y:srcR.y-srcL.y}, dv={x:dstR.x-dstL.x,y:dstR.y-dstL.y};
-    var scale = Math.hypot(dv.x,dv.y) / (Math.hypot(sv.x,sv.y)||1);
-    var rot = Math.atan2(dv.y,dv.x) - Math.atan2(sv.y,sv.x);
-    ctx.translate(dstL.x, dstL.y);
-    ctx.rotate(rot);
-    ctx.scale(scale, scale);
-    ctx.translate(-srcL.x, -srcL.y);
-    ctx.drawImage(img, 0, 0);
-  }
-
-  // baseImgEl의 실제 쿼카 모양(알파) 밖으로는 얼굴 사진이 절대 안 나가도록 이중으로 클립한다
-  function compositeFaceOnto(ctx, W, H, baseImgEl, maskPoints, targetEyes){
-    ctx.drawImage(baseImgEl, 0, 0, W, H);
-    if(!faceImg) return;
-    var tmp = document.createElement('canvas');
-    tmp.width = W; tmp.height = H;
-    var tctx = tmp.getContext('2d');
-    tctx.save();
-    smoothClosedPath(tctx, maskPoints, 0, 0);
-    tctx.clip();
-    if(detectedEyeL && detectedEyeR){
-      tctx.save();
-      drawAlignedFace(tctx, faceImg, detectedEyeL, detectedEyeR, targetEyes.L, targetEyes.R);
-      tctx.restore();
-    } else {
-      var bbox = faceBBox(maskPoints);
-      var baseScale = Math.max(bbox.w/faceImg.width, bbox.h/faceImg.height);
-      var scale = baseScale*faceZoomApplied;
-      var dw=faceImg.width*scale, dh=faceImg.height*scale;
-      var dx=bbox.x+(bbox.w-dw)/2+facePanXApplied, dy=bbox.y+(bbox.h-dh)/2+facePanYApplied;
-      tctx.drawImage(faceImg,dx,dy,dw,dh);
-    }
-    tctx.restore();
-    tctx.globalCompositeOperation = 'destination-in';
-    tctx.drawImage(baseImgEl, 0, 0, W, H);
-    ctx.drawImage(tmp, 0, 0);
-  }
-
   function drawQuokka(){
     function paint(){
       canvasCtx.clearRect(0,0,el.quokkaCanvas.width,el.quokkaCanvas.height);
-      if(skipFaceOverlay || !faceImg){
-        canvasCtx.drawImage(baseImg,0,0,el.quokkaCanvas.width,el.quokkaCanvas.height);
-      } else {
-        var cfg = POSE_CONFIG[currentPose] || POSE_CONFIG.main;
-        compositeFaceOnto(canvasCtx, el.quokkaCanvas.width, el.quokkaCanvas.height, baseImg, cfg.mask, cfg.eyes);
+      canvasCtx.drawImage(baseImg,0,0,el.quokkaCanvas.width,el.quokkaCanvas.height);
+      if(faceImg && !skipFaceOverlay){
+        canvasCtx.save();
+        smoothClosedPath(canvasCtx, FACE_SHAPE_POINTS, 0, 0);
+        canvasCtx.clip();
+        var baseScale = Math.max(FBOX.w/faceImg.width, FBOX.h/faceImg.height);
+        var scale = baseScale*faceZoomApplied;
+        var dw=faceImg.width*scale, dh=faceImg.height*scale;
+        var dx=FBOX.x+(FBOX.w-dw)/2+facePanXApplied, dy=FBOX.y+(FBOX.h-dh)/2+facePanYApplied;
+        canvasCtx.drawImage(faceImg,dx,dy,dw,dh);
+        canvasCtx.restore();
       }
     }
     if(baseImg.complete) paint(); else baseImg.onload=paint;
   }
   drawQuokka();
-
-  // ---------- 아기 등장 장면(엄마+아기 사진)도 같은 방식으로 얼굴 합성 ----------
-  var FAMILY_EYES = { L:{x:220,y:195}, R:{x:400,y:215} };
-  var FAMILY_SHAPE_POINTS = transformPoints(
-    FACE_SHAPE_POINTS.map(function(p){return {x:p.x,y:p.y};}),
-    FACE_REF_EYES.L, FACE_REF_EYES.R, FAMILY_EYES.L, FAMILY_EYES.R
-  );
-  var familyBaseImg = new Image();
-  familyBaseImg.src = 'assets/quokka-family-together.webp';
-  var familyCanvasCtx = el.familyCanvas.getContext('2d');
-  function drawFamily(){
-    function paint(){
-      el.familyCanvas.width = familyBaseImg.naturalWidth || 900;
-      el.familyCanvas.height = familyBaseImg.naturalHeight || 1378;
-      familyCanvasCtx.clearRect(0,0,el.familyCanvas.width,el.familyCanvas.height);
-      if(!faceImg){
-        familyCanvasCtx.drawImage(familyBaseImg,0,0,el.familyCanvas.width,el.familyCanvas.height);
-      } else {
-        compositeFaceOnto(familyCanvasCtx, el.familyCanvas.width, el.familyCanvas.height, familyBaseImg, FAMILY_SHAPE_POINTS, FAMILY_EYES);
-      }
-    }
-    if(familyBaseImg.complete) paint(); else familyBaseImg.onload=paint;
-  }
 
   // ---------- 토스트 / 말풍선 / 파티클 ----------
   var toastTimer, bubbleTimer;
@@ -839,7 +751,7 @@
       state.babyPets += 1;
       save(KEYS.babyPets, String(state.babyPets));
       var rare2 = Math.random() < 0.12;
-      bouncePulse(el.familyCanvas);
+      bouncePulse(el.familyImg);
       triggerHaptic(rare2); playPetSound(rare2);
       spawnHeartParticle();
       spawnHeartParticle();
@@ -912,7 +824,7 @@
     state.phase = 'feeding';
     save(KEYS.phase, state.phase);
     setBackground(1);
-    currentPose = 'eat';
+    skipFaceOverlay = true;
     baseImg.src = EAT_POSE_CLOSED;
     drawQuokka();
     hideQuest();
@@ -1027,10 +939,9 @@
     logEvent('phase_babyArrived');
     state.phase = 'babyArrived';
     save(KEYS.phase, state.phase);
-    currentPose = 'main';
+    skipFaceOverlay = false;
     baseImg.src = 'assets/quokka-1.webp';
     el.quokkaCanvas.hidden = true;
-    drawFamily();
     el.familyWrap.classList.add('show');
     updateTracker();
     showQuest({
@@ -1093,56 +1004,7 @@
     }
   }
 
-  // ---------- 얼굴 자동 인식 (face-api.js) ----------
-  var faceApiReady = false;
-  try {
-    if(window.faceapi){
-      Promise.all([
-        faceapi.nets.tinyFaceDetector.loadFromUri('assets/faceapi/models'),
-        faceapi.nets.faceLandmark68TinyNet.loadFromUri('assets/faceapi/models')
-      ]).then(function(){ faceApiReady = true; }).catch(function(){ faceApiReady = false; });
-    }
-  } catch(e){ faceApiReady = false; }
-
-  function avgPoint(pts){
-    var sx=0, sy=0;
-    pts.forEach(function(p){ sx+=p.x; sy+=p.y; });
-    return { x: sx/pts.length, y: sy/pts.length };
-  }
-  // 업로드한 사진에서 눈 위치를 자동으로 찾는다. 실패하면(동물 사진 등) null로 알려줘서 수동 모드로 넘어가게 함
-  // face-api.js는 HTMLImageElement/HTMLCanvasElement/HTMLVideoElement만 받아들여서,
-  // createImageBitmap으로 읽어온 사진(ImageBitmap)은 캔버스로 한 번 그려서 넘겨줘야 함
-  function toDetectableElement(imgEl){
-    if(imgEl instanceof HTMLImageElement || imgEl instanceof HTMLCanvasElement || imgEl instanceof HTMLVideoElement){
-      return imgEl;
-    }
-    var w = imgEl.width || imgEl.naturalWidth, h = imgEl.height || imgEl.naturalHeight;
-    var c = document.createElement('canvas');
-    c.width = w; c.height = h;
-    c.getContext('2d').drawImage(imgEl, 0, 0, w, h);
-    return c;
-  }
-  function tryAutoDetectEyes(imgEl, onDone){
-    var done = false;
-    function finish(v){ if(done) return; done = true; onDone(v); }
-    try {
-      if(!faceApiReady || !window.faceapi){ finish(null); return; }
-      var detectInput = toDetectableElement(imgEl);
-      faceapi.detectSingleFace(detectInput, new faceapi.TinyFaceDetectorOptions({ inputSize:224 }))
-        .withFaceLandmarks(true)
-        .then(function(result){
-          if(!result){ finish(null); return; }
-          var lm = result.landmarks;
-          var eA = avgPoint(lm.getLeftEye()), eB = avgPoint(lm.getRightEye());
-          finish(eA.x < eB.x ? { L:eA, R:eB } : { L:eB, R:eA });
-        })
-        .catch(function(){ finish(null); });
-    } catch(e){ finish(null); }
-    // 혹시라도 인식이 너무 오래 걸리거나 멈추면 2.5초 후 수동 모드로 넘어가게(먹통 방지)
-    setTimeout(function(){ finish(null); }, 2500);
-  }
-
-  // ---------- 얼굴 편집기 (기존 로직 재사용 — 자동 인식 실패 시 수동 보정용) ----------
+  // ---------- 얼굴 편집기 (기존 로직 재사용) ----------
   var editState = { img:null, baseScale:1, zoom:1, panX:0, panY:0 };
   var pointerState = { active:false, lastX:0, lastY:0 };
   var pinchState = { active:false, startDist:0, startZoom:1 };
@@ -1221,37 +1083,18 @@
   el.faceEditorCancel.addEventListener('click', function(){ el.faceEditor.hidden=true; enterPetting(); });
   el.faceEditorConfirm.addEventListener('click', function(){
     faceImg=editState.img; faceZoomApplied=editState.zoom; facePanXApplied=editState.panX; facePanYApplied=editState.panY;
-    detectedEyeL = null; detectedEyeR = null; // 수동으로 맞춘 경우이므로 자동 정렬 좌표는 사용 안 함
     el.faceEditor.hidden=true; drawQuokka(); enterPetting();
   });
-  function handleUploadedImage(img){
-    try {
-      tryAutoDetectEyes(img, function(eyes){
-        try {
-          if(eyes){
-            faceImg = img;
-            detectedEyeL = eyes.L; detectedEyeR = eyes.R;
-            drawQuokka();
-            enterPetting();
-          } else {
-            // 얼굴 인식 실패(동물 사진 등) — 기존 수동 보정 화면으로
-            detectedEyeL = null; detectedEyeR = null;
-            openFaceEditor(img);
-          }
-        } catch(e){ openFaceEditor(img); }
-      });
-    } catch(e){ openFaceEditor(img); }
-  }
   function fallbackReadFace(file){
     var reader=new FileReader();
-    reader.onload=function(ev){ var img=new Image(); img.onload=function(){ handleUploadedImage(img); }; img.src=ev.target.result; };
+    reader.onload=function(ev){ var img=new Image(); img.onload=function(){ openFaceEditor(img); }; img.src=ev.target.result; };
     reader.readAsDataURL(file);
   }
   el.facePicker.addEventListener('change', function(e){
     var file=e.target.files && e.target.files[0];
     el.facePicker.value='';
     if(!file) return;
-    if(window.createImageBitmap){ createImageBitmap(file,{imageOrientation:'from-image'}).then(handleUploadedImage).catch(function(){ fallbackReadFace(file); }); }
+    if(window.createImageBitmap){ createImageBitmap(file,{imageOrientation:'from-image'}).then(openFaceEditor).catch(function(){ fallbackReadFace(file); }); }
     else { fallbackReadFace(file); }
   });
 
@@ -1323,10 +1166,9 @@
     case 'feeding': enterFeeding(); break;
     case 'babyArrived':
       setBackground(1);
-      currentPose = 'main';
+      skipFaceOverlay = false;
       baseImg.src = 'assets/quokka-1.webp';
       el.quokkaCanvas.hidden = true;
-      drawFamily();
       el.familyWrap.classList.add('show');
       state.phase = 'babyArrived';
       updateTracker();
