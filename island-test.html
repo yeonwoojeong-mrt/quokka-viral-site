@@ -491,6 +491,18 @@
     window.visualViewport.addEventListener('resize', updateKbOffset);
     window.visualViewport.addEventListener('scroll', updateKbOffset);
   }
+
+  // position:fixed 안에 있는 input은 blur()만으로 iOS 키보드가 안 닫히는 경우가 있어,
+  // 화면 밖의 평범한(fixed 아닌) input에 포커스를 잠깐 옮겼다가 떼서 강제로 키보드를 내린다
+  function forceCloseKeyboard(){
+    el.questInput.blur();
+    var dummy = document.createElement('input');
+    dummy.setAttribute('readonly', 'readonly');
+    dummy.style.cssText = 'position:absolute;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px;border:none;';
+    document.body.appendChild(dummy);
+    dummy.focus();
+    setTimeout(function(){ dummy.blur(); dummy.remove(); }, 50);
+  }
   // ---------- 배경 롤링 (해질녘으로 서서히 전환) ----------
   var BG_STAGES = ['assets/bg1.webp', 'assets/bg2.webp', 'assets/bg3.webp'];
   // 미리 로딩해둬서, 장면 전환 시 이미지 디코딩 지연으로 배경이 잠깐 안 보이는 현상을 방지
@@ -670,7 +682,7 @@
   }
 
   // ---------- 퀘스트 말풍선 ----------
-  function hideQuest(){ el.questInput.blur(); el.questDialogue.hidden = true; }
+  function hideQuest(){ forceCloseKeyboard(); el.questDialogue.hidden = true; }
   function showQuest(opts){
     // opts: { text, tag, input:bool, buttons:[{label, action, secondary}], tapToContinue:fn }
     el.questDialogue.hidden = false;
@@ -688,7 +700,7 @@
       el.questInput.value = '';
       setTimeout(function(){ el.questInput.focus(); }, 150);
     } else {
-      el.questInput.blur();
+      forceCloseKeyboard();
     }
     if(opts.buttons && opts.buttons.length){
       el.questActions.hidden = false;
@@ -1143,7 +1155,7 @@
       el.questInput.classList.add('shake');
       return;
     }
-    el.questInput.blur();
+    forceCloseKeyboard();
     logEvent('game_start');
     state.name = value;
     save(KEYS.name, value);
