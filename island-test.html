@@ -182,11 +182,10 @@
     100%{ transform:translate(var(--dx,0px),-90px) scale(1.1); opacity:0; }
   }
   .particle.heart-particle{
-    width:30px; height:30px;
-    background:url('assets/heart-particle.webp') center/contain no-repeat;
+    font-size:28px;
     animation:heart-bloom 1.7s ease-out forwards;
   }
-  .particle.heart-particle.rare{ width:44px; height:44px; }
+  .particle.heart-particle.rare{ font-size:40px; }
   @keyframes heart-bloom{
     0%{ transform:translate(0,10px) scale(.5); opacity:0; }
     16%{ opacity:.6; }
@@ -581,6 +580,7 @@
   function spawnHeartParticle(big){
     var p=document.createElement('span');
     p.className='particle heart-particle'+(big?' rare':'');
+    p.textContent='❤️';
     p.style.left=(38+Math.random()*24)+'%';
     p.style.setProperty('--dx',(Math.random()*50-25)+'px');
     el.particleLayer.appendChild(p);
