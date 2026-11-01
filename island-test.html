@@ -391,6 +391,12 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="assets/faceapi/face-api.min.js"></script>
 <script>
+window.addEventListener('error', function(e){
+  try { alert('[디버그] JS 에러: ' + e.message + ' (줄 ' + e.lineno + ')'); } catch(err){}
+});
+window.addEventListener('unhandledrejection', function(e){
+  try { alert('[디버그] Promise 에러: ' + (e.reason && e.reason.message ? e.reason.message : e.reason)); } catch(err){}
+});
 (function(){
   var APPLY_URL = 'https://www.myrealtrip.com';
 
