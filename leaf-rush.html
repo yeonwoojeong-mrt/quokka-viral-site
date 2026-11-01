@@ -217,7 +217,7 @@
 <div class="overlay" id="mistakeOverlay" hidden>
   <div class="card">
     <button class="close-x" id="mistakeClose" aria-label="닫기">✕</button>
-    <img class="mistake-quokka" src="assets/quokka-eat-closed.webp" alt="쿼카">
+    <img class="mistake-quokka" src="assets/quokka-angry.webp" alt="화난 쿼카">
     <p class="mistake-text">고기는 못 먹는다구용 ㅡㅡ</p>
   </div>
 </div>
@@ -273,7 +273,8 @@
   var EAT_OPEN = 'assets/quokka-eat-open.webp';
   var BG = 'assets/bg1.webp';
   var LEAF_IMG = 'assets/leaf-bite0.webp';
-  var preload = [EAT_CLOSED, EAT_OPEN, BG, LEAF_IMG].map(function(src){
+  var ANGRY_IMG = 'assets/quokka-angry.webp';
+  var preload = [EAT_CLOSED, EAT_OPEN, BG, LEAF_IMG, ANGRY_IMG].map(function(src){
     var im = new Image(); im.src = src; return im;
   });
 
