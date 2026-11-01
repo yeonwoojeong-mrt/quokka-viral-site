@@ -218,7 +218,7 @@
   .sound-toggle:active{ transform:scale(.94); }
 
   .quest-dialogue{
-    position:fixed; left:50%; bottom:calc(60px + env(safe-area-inset-bottom,0px));
+    position:fixed; left:50%; bottom:calc(60px + env(safe-area-inset-bottom,0px) + var(--kb-offset,0px));
     transform:translateX(-50%);
     width:min(92vw,380px);
     background:var(--card-bg);
@@ -244,7 +244,7 @@
     margin-bottom:10px;
   }
   .quest-text.has-next{ margin-bottom:34px; }
-  .quest-dialogue.compact{ padding:18px 16px 12px; bottom:calc(96px + env(safe-area-inset-bottom,0px)); }
+  .quest-dialogue.compact{ padding:18px 16px 12px; bottom:calc(96px + env(safe-area-inset-bottom,0px) + var(--kb-offset,0px)); }
   .quest-dialogue.compact .quest-tag{ top:-15px; padding:3px 11px; font-size:11.5px; }
   .quest-dialogue.compact .quest-text{ font-size:13.5px; line-height:1.4; margin-top:6px; margin-bottom:6px; }
   .quest-dialogue.compact .quest-actions{ margin-top:8px; }
@@ -477,6 +477,18 @@
     faceEditorCancel: document.getElementById('faceEditorCancel'),
     faceEditorConfirm: document.getElementById('faceEditorConfirm')
   };
+
+  // ---------- 키보드가 떠도 하단 대화창이 가려지지 않게 보정 ----------
+  // quest-dialogue는 position:fixed라 레이아웃 뷰포트 기준으로 고정되는데,
+  // iOS 키보드는 비주얼 뷰포트만 줄여서 고정 요소가 키보드 뒤에 깔려버림 — 그 차이만큼 밀어올림
+  if(window.visualViewport){
+    var updateKbOffset = function(){
+      var kb = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
+      document.documentElement.style.setProperty('--kb-offset', kb + 'px');
+    };
+    window.visualViewport.addEventListener('resize', updateKbOffset);
+    window.visualViewport.addEventListener('scroll', updateKbOffset);
+  }
   // ---------- 배경 롤링 (해질녘으로 서서히 전환) ----------
   var BG_STAGES = ['assets/bg1.webp', 'assets/bg2.webp', 'assets/bg3.webp'];
   // 미리 로딩해둬서, 장면 전환 시 이미지 디코딩 지연으로 배경이 잠깐 안 보이는 현상을 방지
