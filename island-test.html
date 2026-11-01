@@ -1111,16 +1111,22 @@
   }
   // 업로드한 사진에서 눈 위치를 자동으로 찾는다. 실패하면(동물 사진 등) null로 알려줘서 수동 모드로 넘어가게 함
   function tryAutoDetectEyes(imgEl, onDone){
-    if(!faceApiReady || !window.faceapi){ onDone(null); return; }
-    faceapi.detectSingleFace(imgEl, new faceapi.TinyFaceDetectorOptions({ inputSize:224 }))
-      .withFaceLandmarks(true)
-      .then(function(result){
-        if(!result){ onDone(null); return; }
-        var lm = result.landmarks;
-        var eA = avgPoint(lm.getLeftEye()), eB = avgPoint(lm.getRightEye());
-        onDone(eA.x < eB.x ? { L:eA, R:eB } : { L:eB, R:eA });
-      })
-      .catch(function(){ onDone(null); });
+    var done = false;
+    function finish(v){ if(done) return; done = true; onDone(v); }
+    try {
+      if(!faceApiReady || !window.faceapi){ finish(null); return; }
+      faceapi.detectSingleFace(imgEl, new faceapi.TinyFaceDetectorOptions({ inputSize:224 }))
+        .withFaceLandmarks(true)
+        .then(function(result){
+          if(!result){ finish(null); return; }
+          var lm = result.landmarks;
+          var eA = avgPoint(lm.getLeftEye()), eB = avgPoint(lm.getRightEye());
+          finish(eA.x < eB.x ? { L:eA, R:eB } : { L:eB, R:eA });
+        })
+        .catch(function(){ finish(null); });
+    } catch(e){ finish(null); }
+    // 혹시라도 인식이 너무 오래 걸리거나 멈추면 2.5초 후 수동 모드로 넘어가게(먹통 방지)
+    setTimeout(function(){ finish(null); }, 2500);
   }
 
   // ---------- 얼굴 편집기 (기존 로직 재사용 — 자동 인식 실패 시 수동 보정용) ----------
@@ -1206,18 +1212,22 @@
     el.faceEditor.hidden=true; drawQuokka(); enterPetting();
   });
   function handleUploadedImage(img){
-    tryAutoDetectEyes(img, function(eyes){
-      if(eyes){
-        faceImg = img;
-        detectedEyeL = eyes.L; detectedEyeR = eyes.R;
-        drawQuokka();
-        enterPetting();
-      } else {
-        // 얼굴 인식 실패(동물 사진 등) — 기존 수동 보정 화면으로
-        detectedEyeL = null; detectedEyeR = null;
-        openFaceEditor(img);
-      }
-    });
+    try {
+      tryAutoDetectEyes(img, function(eyes){
+        try {
+          if(eyes){
+            faceImg = img;
+            detectedEyeL = eyes.L; detectedEyeR = eyes.R;
+            drawQuokka();
+            enterPetting();
+          } else {
+            // 얼굴 인식 실패(동물 사진 등) — 기존 수동 보정 화면으로
+            detectedEyeL = null; detectedEyeR = null;
+            openFaceEditor(img);
+          }
+        } catch(e){ openFaceEditor(img); }
+      });
+    } catch(e){ openFaceEditor(img); }
   }
   function fallbackReadFace(file){
     var reader=new FileReader();
