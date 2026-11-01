@@ -24,11 +24,14 @@
   }
   [hidden]{ display:none!important; }
   html,body{height:100%;}
+  html{ position:fixed; overflow:hidden; width:100%; }
   body{
+    position:fixed; inset:0;
     margin:0;
     font-family:var(--font-display);
     color:var(--ink);
     background:#1b1330;
+    overflow:hidden;
     touch-action:manipulation;
   }
 
@@ -218,7 +221,7 @@
   .sound-toggle:active{ transform:scale(.94); }
 
   .quest-dialogue{
-    position:fixed; left:50%; bottom:calc(60px + env(safe-area-inset-bottom,0px) + var(--kb-offset,0px));
+    position:fixed; left:50%; bottom:calc(60px + env(safe-area-inset-bottom,0px));
     transform:translateX(-50%);
     width:min(92vw,380px);
     background:var(--card-bg);
@@ -244,7 +247,7 @@
     margin-bottom:10px;
   }
   .quest-text.has-next{ margin-bottom:34px; }
-  .quest-dialogue.compact{ padding:18px 16px 12px; bottom:calc(96px + env(safe-area-inset-bottom,0px) + var(--kb-offset,0px)); }
+  .quest-dialogue.compact{ padding:18px 16px 12px; bottom:calc(96px + env(safe-area-inset-bottom,0px)); }
   .quest-dialogue.compact .quest-tag{ top:-15px; padding:3px 11px; font-size:11.5px; }
   .quest-dialogue.compact .quest-text{ font-size:13.5px; line-height:1.4; margin-top:6px; margin-bottom:6px; }
   .quest-dialogue.compact .quest-actions{ margin-top:8px; }
@@ -278,8 +281,6 @@
     border-radius:12px; padding:12px; margin-top:10px;
   }
   .quest-input:focus{ outline:none; border-color:var(--accent); }
-  .quest-input.shake{ animation:inputShake .4s ease; }
-  @keyframes inputShake{ 0%,100%{transform:translateX(0);} 20%{transform:translateX(-6px);} 40%{transform:translateX(6px);} 60%{transform:translateX(-4px);} 80%{transform:translateX(4px);} }
 
   .quest-btn.pulse{
     animation:ctaPulse 1.3s ease-in-out infinite;
@@ -367,7 +368,7 @@
 <div class="quest-dialogue" id="questDialogue" hidden>
   <div class="quest-tag" id="questTag">🏝️ 쿼카섬 안내소</div>
   <div class="quest-text" id="questText"></div>
-  <input class="quest-input" id="questInput" type="text" enterkeyhint="done" maxlength="8" placeholder="예: 복슬이" autocomplete="off" hidden>
+  <input class="quest-input" id="questInput" type="text" maxlength="8" placeholder="예: 복슬이" autocomplete="off" hidden>
   <div class="quest-actions" id="questActions" hidden></div>
   <div class="quest-next" id="questNext" hidden>눌러서 계속 ▼</div>
 </div>
@@ -479,30 +480,6 @@
     faceEditorCancel: document.getElementById('faceEditorCancel'),
     faceEditorConfirm: document.getElementById('faceEditorConfirm')
   };
-
-  // ---------- 키보드가 떠도 하단 대화창이 가려지지 않게 보정 ----------
-  // quest-dialogue는 position:fixed라 레이아웃 뷰포트 기준으로 고정되는데,
-  // iOS 키보드는 비주얼 뷰포트만 줄여서 고정 요소가 키보드 뒤에 깔려버림 — 그 차이만큼 밀어올림
-  if(window.visualViewport){
-    var updateKbOffset = function(){
-      var kb = Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop);
-      document.documentElement.style.setProperty('--kb-offset', kb + 'px');
-    };
-    window.visualViewport.addEventListener('resize', updateKbOffset);
-    window.visualViewport.addEventListener('scroll', updateKbOffset);
-  }
-
-  // position:fixed 안에 있는 input은 blur()만으로 iOS 키보드가 안 닫히는 경우가 있어,
-  // 화면 밖의 평범한(fixed 아닌) input에 포커스를 잠깐 옮겼다가 떼서 강제로 키보드를 내린다
-  function forceCloseKeyboard(){
-    el.questInput.blur();
-    var dummy = document.createElement('input');
-    dummy.setAttribute('readonly', 'readonly');
-    dummy.style.cssText = 'position:absolute;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px;border:none;';
-    document.body.appendChild(dummy);
-    dummy.focus();
-    setTimeout(function(){ dummy.blur(); dummy.remove(); }, 50);
-  }
   // ---------- 배경 롤링 (해질녘으로 서서히 전환) ----------
   var BG_STAGES = ['assets/bg1.webp', 'assets/bg2.webp', 'assets/bg3.webp'];
   // 미리 로딩해둬서, 장면 전환 시 이미지 디코딩 지연으로 배경이 잠깐 안 보이는 현상을 방지
@@ -682,7 +659,7 @@
   }
 
   // ---------- 퀘스트 말풍선 ----------
-  function hideQuest(){ forceCloseKeyboard(); el.questDialogue.hidden = true; }
+  function hideQuest(){ el.questDialogue.hidden = true; }
   function showQuest(opts){
     // opts: { text, tag, input:bool, buttons:[{label, action, secondary}], tapToContinue:fn }
     el.questDialogue.hidden = false;
@@ -698,9 +675,7 @@
 
     if(opts.input){
       el.questInput.value = '';
-      setTimeout(function(){ el.questInput.focus(); }, 150);
-    } else {
-      forceCloseKeyboard();
+      setTimeout(function(){ el.questInput.focus({ preventScroll:true }); }, 150);
     }
     if(opts.buttons && opts.buttons.length){
       el.questActions.hidden = false;
@@ -1149,13 +1124,7 @@
 
   function submitName(){
     var value = el.questInput.value.trim().slice(0,8);
-    if(!value){
-      el.questInput.classList.remove('shake');
-      void el.questInput.offsetWidth;
-      el.questInput.classList.add('shake');
-      return;
-    }
-    forceCloseKeyboard();
+    if(!value){ el.questInput.focus({ preventScroll:true }); return; }
     logEvent('game_start');
     state.name = value;
     save(KEYS.name, value);
