@@ -67,7 +67,7 @@
     width:min(58vw,280px); aspect-ratio:600/630;
     transition:bottom .3s ease;
   }
-  .play-area.intro .quokka-wrap{ bottom:34%; width:min(62vw,290px); }
+  .play-area.intro .quokka-wrap{ bottom:20%; width:min(62vw,290px); }
   .quokka-img{ width:100%; height:100%; object-fit:contain; display:block; transform-origin:50% 70%; }
   .quokka-img.chomp{ animation:chomp .22s ease; }
   @keyframes chomp{
@@ -98,7 +98,7 @@
   }
 
   .quest-dialogue{
-    position:absolute; top:6%; left:50%; transform:translateX(-50%);
+    position:absolute; top:16%; left:50%; transform:translateX(-50%);
     width:calc(100% - 40px);
     text-align:center;
     z-index:6; cursor:pointer;
@@ -110,10 +110,11 @@
   }
   .quest-text.has-next{ margin-bottom:8px; }
   .quest-next{
-    margin-top:10px;
+    display:inline-block; margin-top:12px;
     font-family:var(--font-display);
-    font-size:14px; font-weight:700; color:#fff;
-    text-shadow:0 2px 4px rgba(0,0,0,.45);
+    font-size:14.5px; font-weight:700; color:#fff;
+    background:var(--accent); padding:8px 18px; border-radius:999px;
+    box-shadow:0 3px 10px rgba(0,0,0,.25);
     animation:nextBob .9s ease-in-out infinite;
   }
   @keyframes nextBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(4px); } }
