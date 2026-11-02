@@ -657,7 +657,11 @@
       return;
     }
     var insertReq = Promise.resolve(insertReqRaw); // thenable을 실제 Promise로 한 번만 감싸서, 여러 번 .then()해도 insert가 중복 실행되지 않게 함
+    function delay(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+
     insertReq.then(function(){
+      return delay(300); // insert 직후 바로 읽으면 반영 전일 수 있어 살짝 텀을 둠
+    }).then(function(){
       return sbClient.from('best_times').select('best_value').eq('game', GAME_NAME).single();
     }).then(function(res){
       var data = res && res.data;
@@ -669,10 +673,26 @@
       el.resultBest.textContent = '';
     });
 
+    // 방금 낸 내 기록이 당연히 5위 안에 들어야 하는데 아직 안 보이면, 반영이 늦은 걸로 보고 한 번 더 조회해본다
+    function fetchLeaderboard(attempt){
+      return sbClient.from('leaderboard').select('nickname,value').eq('game', GAME_NAME).order('value', { ascending:true }).limit(5).then(function(res){
+        var rows = (res && res.data) || [];
+        var worst = rows.length ? parseFloat(rows[rows.length - 1].value) : null;
+        var shouldBeIn = rows.length < 5 || (worst != null && elapsed <= worst + 0.005);
+        var isIn = rows.some(function(r){ return r.nickname === nickname && Math.abs(parseFloat(r.value) - elapsed) < 0.005; });
+        if(shouldBeIn && !isIn && attempt < 2){
+          return delay(500).then(function(){ return fetchLeaderboard(attempt + 1); });
+        }
+        return rows;
+      });
+    }
+
     insertReq.then(function(){
-      return sbClient.from('leaderboard').select('nickname,value').eq('game', GAME_NAME).order('value', { ascending:true }).limit(5);
-    }).then(function(res){
-      renderLeaderboard(res && res.data || []);
+      return delay(300);
+    }).then(function(){
+      return fetchLeaderboard(0);
+    }).then(function(rows){
+      renderLeaderboard(rows);
     }).catch(function(){
       el.leaderboard.innerHTML = '';
     });
