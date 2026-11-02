@@ -98,39 +98,31 @@
   }
 
   .quest-dialogue{
-    position:absolute; left:50%; bottom:40px; transform:translateX(-50%);
-    width:calc(100% - 8px);
-    background:var(--card-bg); border:3px solid #3a2a1c; border-radius:18px;
-    padding:18px 20px 16px; box-sizing:border-box;
-    box-shadow:0 10px 24px rgba(0,0,0,.35);
+    position:absolute; top:6%; left:50%; transform:translateX(-50%);
+    width:calc(100% - 40px);
+    text-align:center;
     z-index:6; cursor:pointer;
   }
-  .quest-tag{
-    position:absolute; top:-16px; left:16px;
-    background:#ffe9b3; border:2px solid #3a2a1c;
-    padding:4px 14px; border-radius:999px;
-    font-size:12.5px; font-weight:700; color:var(--accent);
-  }
   .quest-text{
-    font-size:16.5px; line-height:1.6; color:var(--ink);
-    word-break:keep-all; margin:4px 0 0;
+    font-size:19px; line-height:1.55; font-weight:700; color:#fff;
+    text-shadow:0 2px 4px rgba(0,0,0,.45), 0 0 18px rgba(0,0,0,.25);
+    word-break:keep-all; margin:0;
   }
-  .quest-text.has-next{ margin-bottom:28px; }
+  .quest-text.has-next{ margin-bottom:8px; }
   .quest-next{
-    position:absolute; right:14px; bottom:10px;
-    display:flex; align-items:center; gap:4px;
+    margin-top:10px;
     font-family:var(--font-display);
-    font-size:13.5px; font-weight:700; color:var(--paper);
-    background:var(--accent); padding:6px 12px; border-radius:999px;
-    box-shadow:0 2px 6px rgba(0,0,0,.2);
+    font-size:14px; font-weight:700; color:#fff;
+    text-shadow:0 2px 4px rgba(0,0,0,.45);
     animation:nextBob .9s ease-in-out infinite;
   }
   @keyframes nextBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(4px); } }
   .quest-input{
     width:100%; box-sizing:border-box; font-family:inherit;
     font-size:16px; text-align:center; color:var(--ink);
-    background:#faf3e6; border:2px solid rgba(0,0,0,.15);
+    background:rgba(255,253,248,.95); border:2px solid rgba(0,0,0,.15);
     border-radius:12px; padding:12px; margin-top:14px;
+    box-shadow:0 4px 12px rgba(0,0,0,.2);
   }
   .quest-input:focus{ outline:none; border-color:var(--accent); }
 
@@ -245,19 +237,16 @@
   </div>
 
   <div class="quest-dialogue" id="introDialogue">
-    <span class="quest-tag">🏝️ 쿼카섬 안내소</span>
     <p class="quest-text has-next" id="introText"></p>
     <div class="quest-next" id="introNext" hidden>눌러서 계속 ▼</div>
   </div>
 
   <div class="quest-dialogue" id="goalDialogue" hidden>
-    <span class="quest-tag">🏝️ 쿼카섬 안내소</span>
     <p class="quest-text has-next" id="goalText"></p>
     <div class="quest-next" id="goalNext" hidden>눌러서 계속 ▼</div>
   </div>
 
   <div class="quest-dialogue" id="startOverlay" hidden>
-    <span class="quest-tag">🏝️ 쿼카섬 안내소</span>
     <p class="quest-text" id="namingText"></p>
     <input class="quest-input" id="nicknameInput" type="text" placeholder="닉네임 (최대 8자)" maxlength="8" hidden>
     <button class="btn primary pulse" id="startBtn" hidden>입장하기</button>
@@ -706,7 +695,7 @@
       var tok = tokens[i];
       targetEl.innerHTML += tok;
       i++;
-      setTimeout(step, /^<[^>]+>$/.test(tok) ? 0 : 26);
+      setTimeout(step, /^<[^>]+>$/.test(tok) ? 0 : 60);
     }
     step();
     return {
