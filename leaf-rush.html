@@ -246,15 +246,21 @@
 
   <div class="quest-dialogue" id="introDialogue">
     <span class="quest-tag">🏝️ 쿼카섬 안내소</span>
-    <p class="quest-text has-next">안녕하세요 쿼카섬에 오신걸 환영합니다!<br>배고픈 쿼카에게 나뭇잎 <b id="startGoalText">30</b>개만<br>골라서 빨리 줘보세요!</p>
-    <div class="quest-next">눌러서 계속 ▼</div>
+    <p class="quest-text has-next" id="introText"></p>
+    <div class="quest-next" id="introNext" hidden>눌러서 계속 ▼</div>
+  </div>
+
+  <div class="quest-dialogue" id="goalDialogue" hidden>
+    <span class="quest-tag">🏝️ 쿼카섬 안내소</span>
+    <p class="quest-text has-next" id="goalText"></p>
+    <div class="quest-next" id="goalNext" hidden>눌러서 계속 ▼</div>
   </div>
 
   <div class="quest-dialogue" id="startOverlay" hidden>
     <span class="quest-tag">🏝️ 쿼카섬 안내소</span>
-    <p class="quest-text">아이디를 적고 쿼카섬에 입장하세요!</p>
-    <input class="quest-input" id="nicknameInput" type="text" placeholder="닉네임 (최대 8자)" maxlength="8">
-    <button class="btn primary pulse" id="startBtn">입장하기</button>
+    <p class="quest-text" id="namingText"></p>
+    <input class="quest-input" id="nicknameInput" type="text" placeholder="닉네임 (최대 8자)" maxlength="8" hidden>
+    <button class="btn primary pulse" id="startBtn" hidden>입장하기</button>
   </div>
 </div>
 
@@ -349,8 +355,13 @@
     quokkaImg: document.getElementById('quokkaImg'),
     hint: document.getElementById('hint'),
     introDialogue: document.getElementById('introDialogue'),
+    introText: document.getElementById('introText'),
+    introNext: document.getElementById('introNext'),
+    goalDialogue: document.getElementById('goalDialogue'),
+    goalText: document.getElementById('goalText'),
+    goalNext: document.getElementById('goalNext'),
     startOverlay: document.getElementById('startOverlay'),
-    startGoalText: document.getElementById('startGoalText'),
+    namingText: document.getElementById('namingText'),
     startBtn: document.getElementById('startBtn'),
     nicknameInput: document.getElementById('nicknameInput'),
     overOverlay: document.getElementById('overOverlay'),
@@ -366,7 +377,6 @@
     mistakeClose: document.getElementById('mistakeClose')
   };
   el.counterGoal.textContent = String(GOAL);
-  el.startGoalText.textContent = String(GOAL);
   el.resultHead.textContent = GOAL + '개 잘 골라 먹였다!';
 
   // ---------- 상태 ----------
@@ -685,11 +695,68 @@
     });
   }
 
-  el.introDialogue.addEventListener('click', function(){
-    el.introDialogue.hidden = true;
-    el.startOverlay.hidden = false;
-    setTimeout(function(){ el.nicknameInput.focus(); }, 150);
-  });
+  // ---------- 타자 치듯 한 글자씩 보여주기 ----------
+  function typeHtml(targetEl, html, onDone){
+    var tokens = html.match(/<[^>]+>|[\s\S]/g) || [];
+    var i = 0, finished = false;
+    targetEl.innerHTML = '';
+    function step(){
+      if(finished) return;
+      if(i >= tokens.length){ finished = true; if(onDone) onDone(); return; }
+      var tok = tokens[i];
+      targetEl.innerHTML += tok;
+      i++;
+      setTimeout(step, /^<[^>]+>$/.test(tok) ? 0 : 26);
+    }
+    step();
+    return {
+      skip: function(){
+        if(finished) return;
+        finished = true;
+        targetEl.innerHTML = html;
+        if(onDone) onDone();
+      }
+    };
+  }
+
+  function setupTapStep(dialogueEl, textEl, nextEl, html, onAdvance){
+    var typer = null, done = false;
+    nextEl.hidden = true;
+    typer = typeHtml(textEl, html, function(){ done = true; nextEl.hidden = false; });
+    dialogueEl.onclick = function(){
+      if(!done){ typer.skip(); return; }
+      onAdvance();
+    };
+  }
+
+  setupTapStep(el.introDialogue, el.introText, el.introNext,
+    '안녕하세요 쿼카섬에 오신걸 환영합니다!',
+    function(){
+      el.introDialogue.hidden = true;
+      el.goalDialogue.hidden = false;
+      typeGoalStep();
+    });
+
+  function typeGoalStep(){
+    setupTapStep(el.goalDialogue, el.goalText, el.goalNext,
+      '배고픈 쿼카에게 나뭇잎 <b>' + GOAL + '</b>개만<br>골라서 빨리 줘보세요!<br>고기는 못 먹어용 ㅡㅡ',
+      function(){
+        el.goalDialogue.hidden = true;
+        el.startOverlay.hidden = false;
+        typeNamingStep();
+      });
+  }
+
+  function typeNamingStep(){
+    el.nicknameInput.hidden = true;
+    el.startBtn.hidden = true;
+    typeHtml(el.namingText, '아이디를 적고 쿼카섬에 입장하세요!', function(){
+      el.nicknameInput.hidden = false;
+      el.startBtn.hidden = false;
+      setTimeout(function(){ el.nicknameInput.focus(); }, 150);
+    });
+  }
+
   el.nicknameInput.addEventListener('keydown', function(e){
     if(e.key === 'Enter'){ e.preventDefault(); el.startBtn.click(); }
   });
