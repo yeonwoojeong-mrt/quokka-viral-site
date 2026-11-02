@@ -82,6 +82,21 @@
   }
   .hint.hidden{ opacity:0; }
 
+  .countdown{
+    position:absolute; inset:0; z-index:4;
+    display:flex; align-items:center; justify-content:center;
+    pointer-events:none;
+    font-size:110px; font-weight:700; color:#fff;
+    text-shadow:0 4px 0 rgba(0,0,0,.25), 0 10px 20px rgba(0,0,0,.3);
+  }
+  .countdown.pop{ animation:countdownPop .7s cubic-bezier(.2,1.6,.4,1) both; }
+  @keyframes countdownPop{
+    0%{ transform:scale(.3); opacity:0; }
+    35%{ transform:scale(1.15); opacity:1; }
+    60%{ transform:scale(1); opacity:1; }
+    100%{ transform:scale(1); opacity:0; }
+  }
+
   .quest-dialogue{
     position:absolute; left:50%; bottom:40px; transform:translateX(-50%);
     width:calc(100% - 8px);
@@ -226,6 +241,7 @@
       <img class="quokka-img" id="quokkaImg" src="assets/quokka-eat-closed.webp" alt="쿼카">
       <div class="hint hidden" id="hint">떨어지는 나뭇잎을 콕콕 터치해서 먹여주세요!</div>
     </div>
+    <div class="countdown" id="countdown" hidden></div>
   </div>
 
   <div class="quest-dialogue" id="introDialogue">
@@ -324,6 +340,7 @@
 
   var el = {
     playArea: document.getElementById('playArea'),
+    countdown: document.getElementById('countdown'),
     counterBadge: document.getElementById('counterBadge'),
     timerBadge: document.getElementById('timerBadge'),
     restartBtn: document.getElementById('restartBtn'),
@@ -564,18 +581,35 @@
   }
 
   // ---------- 진행 ----------
+  function runCountdown(onDone){
+    var steps = ['3','2','1','시작!'];
+    var i = 0;
+    el.countdown.hidden = false;
+    function showNext(){
+      el.countdown.textContent = steps[i];
+      el.countdown.classList.remove('pop');
+      void el.countdown.offsetWidth;
+      el.countdown.classList.add('pop');
+      i++;
+      if(i < steps.length){
+        setTimeout(showNext, 700);
+      } else {
+        setTimeout(function(){
+          el.countdown.hidden = true;
+          onDone();
+        }, 500);
+      }
+    }
+    showNext();
+  }
+
   function startGame(){
+    getAudioCtx(); // iOS 오디오 언락은 반드시 클릭 핸들러 안에서 동기적으로 호출해야 함
     el.nicknameInput.blur();
     el.playArea.classList.remove('intro');
-    logEvent('game_start');
-    state = 'playing';
-    t0 = performance.now();
-    count = 0; elapsed = 0; paused = false;
-    spawnAcc = 0; nextSpawnGap = SPAWN_MIN; lastTime = 0;
-    bag = [];
+    paused = false;
     clearItems();
-    for(var i = 0; i < 3; i++) spawnItem();
-    updateCounter();
+    el.counterNum.textContent = '0';
     el.timerBadge.textContent = '0.0초';
     el.counterBadge.hidden = false;
     el.timerBadge.hidden = false;
@@ -584,8 +618,21 @@
     el.overOverlay.hidden = true;
     el.leaderboard.innerHTML = '';
     el.mistakeOverlay.hidden = true;
+    el.hint.classList.add('hidden');
+    runCountdown(beginPlay);
+  }
+
+  function beginPlay(){
+    logEvent('game_start');
+    state = 'playing';
+    t0 = performance.now();
+    count = 0; elapsed = 0;
+    spawnAcc = 0; nextSpawnGap = SPAWN_MIN; lastTime = 0;
+    bag = [];
+    clearItems();
+    for(var i = 0; i < 3; i++) spawnItem();
+    updateCounter();
     el.hint.classList.remove('hidden');
-    getAudioCtx();
   }
 
   function finishGame(){
