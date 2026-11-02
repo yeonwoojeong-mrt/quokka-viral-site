@@ -764,8 +764,10 @@
 
   // ---------- 공유 ----------
   function shareText(){
+    // 카카오 링크 미리보기는 URL별로 서버에 캐싱돼서, 이미지 추가 전 공유됐던 적 있는
+    // 기본 URL은 계속 옛날 카드로 뜸 - 쿼리스트링을 붙여 매번 새 URL로 취급되게 함
     return '쿼카한테 나뭇잎 ' + GOAL + '개 골라 먹이기! ' + elapsed.toFixed(2) + '초 기록!\n'
-      + location.href.split(/[?#]/)[0] + '\n#나뭇잎러시 #쿼카섬';
+      + location.href.split(/[?#]/)[0] + '?v=1' + '\n#나뭇잎러시 #쿼카섬';
   }
   function drawCover(g, img, x, y, w, h){
     var ir = img.naturalWidth / img.naturalHeight, or = w / h;
