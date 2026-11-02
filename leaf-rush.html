@@ -110,7 +110,17 @@
     box-shadow:0 10px 24px rgba(0,0,0,.3);
   }
   .card h1{ font-size:21px; margin:0 0 10px; }
-  .card p.desc{ font-size:14.5px; line-height:1.55; margin:0 0 20px; color:var(--ink); opacity:.85; }
+  .start-tag{
+    position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+    background:#ffe9b3; border:2px solid #3a2a1c;
+    padding:4px 14px; border-radius:999px; white-space:nowrap;
+    font-size:12.5px; font-weight:700; color:var(--accent);
+  }
+  .card p.welcome{
+    font-size:15.5px; line-height:1.65; margin:6px 0 18px; color:var(--ink);
+    word-break:keep-all;
+  }
+  .card p.welcome b{ color:var(--accent); }
   .card .result-head{ font-size:15px; font-weight:700; margin:0 0 4px; color:var(--accent); }
   .card .result-time{ font-size:44px; font-weight:700; margin:0 0 4px; font-variant-numeric:tabular-nums; }
   .card .result-best{ font-size:14px; font-weight:700; opacity:.7; margin:0 0 10px; }
@@ -193,8 +203,9 @@
 
 <div class="overlay" id="startOverlay">
   <div class="card">
+    <span class="start-tag">🏝️ 쿼카섬 안내소</span>
     <h1>🍃 나뭇잎 러시</h1>
-    <p class="desc">위에서 나뭇잎이랑 고기가 같이 떨어져요!<br>나뭇잎 <b id="startGoalText">30</b>개만 골라서<br>쿼카한테 빨리 줘보세요 🍖🚫</p>
+    <p class="welcome">안녕하세요, 쿼카섬에 오신 걸 환영합니다!<br>배고픈 쿼카에게 나뭇잎 <b id="startGoalText">30</b>개만<br>빠르게 골라서 줘보세요 🍖🚫</p>
     <input class="name-input" id="nicknameInput" type="text" placeholder="닉네임 (최대 8자)" maxlength="8">
     <button class="btn primary pulse" id="startBtn">시작하기</button>
   </div>
