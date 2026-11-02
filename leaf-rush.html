@@ -65,7 +65,9 @@
   .quokka-wrap{
     position:absolute; left:50%; bottom:4%; transform:translateX(-50%);
     width:min(58vw,280px); aspect-ratio:600/630;
+    transition:bottom .3s ease;
   }
+  .play-area.intro .quokka-wrap{ bottom:34%; width:min(62vw,290px); }
   .quokka-img{ width:100%; height:100%; object-fit:contain; display:block; transform-origin:50% 70%; }
   .quokka-img.chomp{ animation:chomp .22s ease; }
   @keyframes chomp{
@@ -219,7 +221,7 @@
     <button class="sound-toggle" id="soundToggle" aria-label="소리 켜기/끄기">🔊</button>
   </div>
 
-  <div class="play-area" id="playArea">
+  <div class="play-area intro" id="playArea">
     <div class="quokka-wrap">
       <img class="quokka-img" id="quokkaImg" src="assets/quokka-eat-closed.webp" alt="쿼카">
       <div class="hint hidden" id="hint">떨어지는 나뭇잎을 콕콕 터치해서 먹여주세요!</div>
@@ -564,6 +566,7 @@
   // ---------- 진행 ----------
   function startGame(){
     el.nicknameInput.blur();
+    el.playArea.classList.remove('intro');
     logEvent('game_start');
     state = 'playing';
     t0 = performance.now();
