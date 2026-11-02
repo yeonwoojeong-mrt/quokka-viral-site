@@ -104,8 +104,7 @@
     z-index:6; cursor:pointer;
   }
   .quest-text{
-    font-size:19px; line-height:1.55; font-weight:700; color:#fff;
-    text-shadow:0 2px 4px rgba(0,0,0,.45), 0 0 18px rgba(0,0,0,.25);
+    font-size:22px; line-height:1.55; font-weight:700; color:#fff;
     word-break:keep-all; margin:0;
   }
   .quest-text.has-next{ margin-bottom:8px; }
@@ -149,7 +148,7 @@
     box-shadow:0 10px 24px rgba(0,0,0,.3);
   }
   .card h1{ font-size:21px; margin:0 0 10px; }
-  .card .result-head{ font-size:15px; font-weight:700; margin:0 0 4px; color:var(--accent); }
+  .card .result-head{ font-size:17px; font-weight:700; margin:0 0 4px; color:var(--accent); }
   .card .result-time{ font-size:44px; font-weight:700; margin:0 0 4px; font-variant-numeric:tabular-nums; }
   .card .result-best{ font-size:14px; font-weight:700; opacity:.7; margin:0 0 10px; }
   .leaderboard{
@@ -168,8 +167,9 @@
   .leaderboard li.me .rank{ opacity:1; color:var(--accent); }
   .leaderboard li.me .time{ opacity:1; color:var(--accent); }
   .name-input{
-    width:100%; box-sizing:border-box; font-family:inherit;
-    font-size:16px; text-align:center; color:var(--ink);
+    width:100%; box-sizing:border-box;
+    font-family:var(--font-display); -webkit-appearance:none; appearance:none;
+    font-size:18px; text-align:center; color:var(--ink);
     background:#faf3e6; border:2px solid rgba(0,0,0,.15);
     border-radius:12px; padding:12px; margin-bottom:12px;
   }
@@ -183,7 +183,8 @@
 
   .btn{
     display:block; width:100%; box-sizing:border-box; min-height:50px; margin-top:10px;
-    font-family:inherit; font-size:16px; font-weight:700; border:none; border-radius:999px;
+    font-family:var(--font-display); -webkit-appearance:none; appearance:none;
+    font-size:18px; font-weight:700; border:none; border-radius:999px;
     cursor:pointer;
   }
   .btn:active{ transform:scale(.97); }
@@ -713,7 +714,7 @@
   }
 
   setupTapStep(el.introDialogue, el.introText, el.introNext,
-    '안녕하세요 쿼카섬에 오신걸 환영합니다!',
+    '안녕하세요<br>쿼카섬에 오신걸 환영합니다!',
     function(){
       el.introDialogue.hidden = true;
       el.goalDialogue.hidden = false;
