@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
 <title>나뭇잎 러시</title>
-<link rel="preload" href="assets/fonts/DOSSaemmul-subset.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/OngeulipParkDahyun-subset.woff2" as="font" type="font/woff2" crossorigin>
 <style>
   @font-face{
-    font-family:'DOS Saemmul';
-    src:url('assets/fonts/DOSSaemmul-subset.woff2') format('woff2');
+    font-family:'Ongeulip';
+    src:url('assets/fonts/OngeulipParkDahyun-subset.woff2') format('woff2');
     font-display:swap;
   }
   :root{
@@ -17,7 +17,7 @@
     --card-bg:#fffdf8;
     --accent:#c1502e;
     --leaf:#4f9a4a;
-    --font-display:'DOS Saemmul','Malgun Gothic',sans-serif;
+    --font-display:'Ongeulip','Malgun Gothic',sans-serif;
   }
   [hidden]{ display:none!important; }
   html,body{ height:100%; }
@@ -803,12 +803,12 @@
 
     g.textAlign = 'center'; g.textBaseline = 'middle';
     g.fillStyle = '#33251a';
-    g.font = '700 32px "DOS Saemmul"'; g.fillText('🍃 나뭇잎 러시', W/2, cardY+42);
-    g.font = '700 22px "DOS Saemmul"'; g.fillText(GOAL + '개 완주', W/2, cardY+80);
+    g.font = '700 32px "Ongeulip"'; g.fillText('🍃 나뭇잎 러시', W/2, cardY+42);
+    g.font = '700 22px "Ongeulip"'; g.fillText(GOAL + '개 완주', W/2, cardY+80);
     g.fillStyle = '#c1502e';
-    g.font = '700 64px "DOS Saemmul"'; g.fillText(elapsed.toFixed(2) + '초', W/2, cardY+140);
+    g.font = '700 64px "Ongeulip"'; g.fillText(elapsed.toFixed(2) + '초', W/2, cardY+140);
     g.fillStyle = '#33251a';
-    g.font = '700 18px "DOS Saemmul"';
+    g.font = '700 18px "Ongeulip"';
     if(globalBest != null) g.fillText('전체 최고기록 ' + globalBest.toFixed(2) + '초', W/2, cardY+185);
 
     var bin = atob(c.toDataURL('image/png').split(',')[1]);
