@@ -80,6 +80,43 @@
   }
   .hint.hidden{ opacity:0; }
 
+  .quest-dialogue{
+    position:absolute; left:50%; bottom:16px; transform:translateX(-50%);
+    width:calc(100% - 8px);
+    background:var(--card-bg); border:3px solid #3a2a1c; border-radius:18px;
+    padding:18px 20px 16px; box-sizing:border-box;
+    box-shadow:0 10px 24px rgba(0,0,0,.35);
+    z-index:6; cursor:pointer;
+  }
+  .quest-tag{
+    position:absolute; top:-16px; left:16px;
+    background:#ffe9b3; border:2px solid #3a2a1c;
+    padding:4px 14px; border-radius:999px;
+    font-size:12.5px; font-weight:700; color:var(--accent);
+  }
+  .quest-text{
+    font-size:16.5px; line-height:1.6; color:var(--ink);
+    word-break:keep-all; margin:4px 0 0;
+  }
+  .quest-text.has-next{ margin-bottom:28px; }
+  .quest-next{
+    position:absolute; right:14px; bottom:10px;
+    display:flex; align-items:center; gap:4px;
+    font-family:var(--font-display);
+    font-size:13.5px; font-weight:700; color:var(--paper);
+    background:var(--accent); padding:6px 12px; border-radius:999px;
+    box-shadow:0 2px 6px rgba(0,0,0,.2);
+    animation:nextBob .9s ease-in-out infinite;
+  }
+  @keyframes nextBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(4px); } }
+  .quest-input{
+    width:100%; box-sizing:border-box; font-family:inherit;
+    font-size:16px; text-align:center; color:var(--ink);
+    background:#faf3e6; border:2px solid rgba(0,0,0,.15);
+    border-radius:12px; padding:12px; margin-top:14px;
+  }
+  .quest-input:focus{ outline:none; border-color:var(--accent); }
+
   .falling-item{
     position:absolute; width:72px; height:72px;
     transform:translate(-50%,-50%);
@@ -110,17 +147,6 @@
     box-shadow:0 10px 24px rgba(0,0,0,.3);
   }
   .card h1{ font-size:21px; margin:0 0 10px; }
-  .start-tag{
-    position:absolute; top:-16px; left:50%; transform:translateX(-50%);
-    background:#ffe9b3; border:2px solid #3a2a1c;
-    padding:4px 14px; border-radius:999px; white-space:nowrap;
-    font-size:12.5px; font-weight:700; color:var(--accent);
-  }
-  .card p.welcome{
-    font-size:15.5px; line-height:1.65; margin:6px 0 18px; color:var(--ink);
-    word-break:keep-all;
-  }
-  .card p.welcome b{ color:var(--accent); }
   .card .result-head{ font-size:15px; font-weight:700; margin:0 0 4px; color:var(--accent); }
   .card .result-time{ font-size:44px; font-weight:700; margin:0 0 4px; font-variant-numeric:tabular-nums; }
   .card .result-best{ font-size:14px; font-weight:700; opacity:.7; margin:0 0 10px; }
@@ -199,15 +225,18 @@
       <div class="hint hidden" id="hint">떨어지는 나뭇잎을 콕콕 터치해서 먹여주세요!</div>
     </div>
   </div>
-</div>
 
-<div class="overlay" id="startOverlay">
-  <div class="card">
-    <span class="start-tag">🏝️ 쿼카섬 안내소</span>
-    <h1>🍃 나뭇잎 러시</h1>
-    <p class="welcome">안녕하세요, 쿼카섬에 오신 걸 환영합니다!<br>배고픈 쿼카에게 나뭇잎 <b id="startGoalText">30</b>개만<br>빠르게 골라서 줘보세요 🍖🚫</p>
-    <input class="name-input" id="nicknameInput" type="text" placeholder="닉네임 (최대 8자)" maxlength="8">
-    <button class="btn primary pulse" id="startBtn">시작하기</button>
+  <div class="quest-dialogue" id="introDialogue">
+    <span class="quest-tag">🏝️ 쿼카섬 안내소</span>
+    <p class="quest-text has-next">안녕하세요 쿼카섬에 오신걸 환영합니다!<br>배고픈 쿼카에게 나뭇잎 <b id="startGoalText">30</b>개만<br>골라서 빨리 줘보세요!</p>
+    <div class="quest-next">눌러서 계속 ▼</div>
+  </div>
+
+  <div class="quest-dialogue" id="startOverlay" hidden>
+    <span class="quest-tag">🏝️ 쿼카섬 안내소</span>
+    <p class="quest-text">아이디 적고 쿼카섬에 입장하세요!</p>
+    <input class="quest-input" id="nicknameInput" type="text" placeholder="닉네임 (최대 8자)" maxlength="8">
+    <button class="btn primary pulse" id="startBtn">입장하기</button>
   </div>
 </div>
 
@@ -300,6 +329,7 @@
     counterGoal: document.getElementById('counterGoal'),
     quokkaImg: document.getElementById('quokkaImg'),
     hint: document.getElementById('hint'),
+    introDialogue: document.getElementById('introDialogue'),
     startOverlay: document.getElementById('startOverlay'),
     startGoalText: document.getElementById('startGoalText'),
     startBtn: document.getElementById('startBtn'),
@@ -605,6 +635,11 @@
     });
   }
 
+  el.introDialogue.addEventListener('click', function(){
+    el.introDialogue.hidden = true;
+    el.startOverlay.hidden = false;
+    setTimeout(function(){ el.nicknameInput.focus(); }, 150);
+  });
   el.nicknameInput.addEventListener('keydown', function(e){
     if(e.key === 'Enter'){ e.preventDefault(); el.startBtn.click(); }
   });
