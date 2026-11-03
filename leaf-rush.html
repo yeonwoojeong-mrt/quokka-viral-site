@@ -50,9 +50,12 @@
   }
   .counter-badge b{ color:var(--accent); font-size:20px; }
   .timer-badge{
-    background:rgba(255,253,248,.92); padding:8px 14px; border-radius:999px;
-    font-size:15px; font-weight:700; box-shadow:0 2px 8px rgba(0,0,0,.15);
-    margin-left:8px; font-variant-numeric:tabular-nums;
+    position:absolute; top:calc(16px + env(safe-area-inset-top,0px)); left:50%; transform:translateX(-50%);
+    font-size:30px; font-weight:700; color:#fff; font-variant-numeric:tabular-nums;
+    text-shadow:
+      -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000,
+      -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000;
+    z-index:3;
   }
   .counter-badge.bump{ animation:badgeBump .45s ease; }
   @keyframes badgeBump{
@@ -81,8 +84,9 @@
   }
 
   .hint{
-    position:absolute; top:-30px; left:50%; transform:translateX(-50%);
-    font-size:15.5px; color:var(--paper); text-align:center; white-space:nowrap;
+    position:absolute; top:-46px; left:50%; transform:translateX(-50%);
+    font-size:18.5px; font-weight:700; color:var(--paper); text-align:center; white-space:nowrap;
+    line-height:1.4;
     text-shadow:0 1px 3px rgba(0,0,0,.55);
     transition:opacity .3s ease;
   }
@@ -112,7 +116,7 @@
     z-index:6; cursor:pointer;
   }
   .quest-text{
-    font-size:22px; line-height:1.55; font-weight:700; color:#fff;
+    font-size:22px; line-height:1.3; font-weight:700; color:#fff;
     word-break:keep-all; margin:0;
     text-shadow:
       -1px -1px 0 #000, 1px -1px 0 #000,
@@ -229,16 +233,16 @@
 <div class="wrap">
   <div class="hud-top">
     <div class="counter-badge" id="counterBadge" hidden>나뭇잎 <b id="counterNum">0</b>/<span id="counterGoal">30</span></div>
-    <div class="timer-badge" id="timerBadge" hidden>0.0초</div>
     <div style="flex:1"></div>
     <button class="sound-toggle" id="restartBtn" aria-label="다시 시작" hidden>↻</button>
     <button class="sound-toggle" id="soundToggle" aria-label="소리 켜기/끄기">🔊</button>
   </div>
+  <div class="timer-badge" id="timerBadge" hidden>0.0초</div>
 
   <div class="play-area intro" id="playArea">
     <div class="quokka-wrap">
       <img class="quokka-img" id="quokkaImg" src="assets/quokka-eat-closed.webp" alt="쿼카">
-      <div class="hint hidden" id="hint">떨어지는 나뭇잎을 콕콕 터치해서 먹여주세요!</div>
+      <div class="hint hidden" id="hint">떨어지는 나뭇잎을<br>콕콕 터치해서 먹여주세요!</div>
     </div>
     <div class="countdown" id="countdown" hidden></div>
   </div>
@@ -756,7 +760,7 @@
 
   function typeGoalStep(){
     setupTapStep(el.goalDialogue, el.goalText, el.goalNext,
-      '배고픈 쿼카에게 나뭇잎 <b>' + GOAL + '</b>개만<br>골라서 빨리 줘보세요!<br>고기는 못 먹어용 ㅡㅡ',
+      '배고픈 쿼카에게 나뭇잎 <b>' + GOAL + '</b>개만<br>골라서 빨리 줘보세요!<br>고기는 못 먹어요!',
       openNamingModal);
   }
 
