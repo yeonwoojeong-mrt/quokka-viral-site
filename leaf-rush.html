@@ -192,6 +192,11 @@
   }
   .name-input:focus{ outline:none; border-color:var(--accent); }
   .name-input::placeholder{ font-family:var(--font-display); color:var(--ink); opacity:.4; }
+  .name-input.shake{ animation:nameShake .4s ease; }
+  @keyframes nameShake{ 0%,100%{transform:translateX(0);} 20%{transform:translateX(-6px);} 40%{transform:translateX(6px);} 60%{transform:translateX(-4px);} 80%{transform:translateX(4px);} }
+  .name-error{
+    font-size:13px; color:var(--accent); margin:-6px 0 10px; font-weight:700;
+  }
   .card .result-best.new{
     color:var(--accent); opacity:1; font-size:16px;
     animation:bestPop .6s cubic-bezier(.2,1.6,.4,1) both, bestBounce 1.4s ease-in-out .6s infinite;
@@ -264,6 +269,7 @@
   <div class="card">
     <p class="result-head" id="namingText">아이디를 적고 쿼카섬에 입장하세요!</p>
     <input class="name-input" id="nicknameInput" type="text" placeholder="닉네임 (최대 8자)" maxlength="8">
+    <p class="name-error" id="nameError" hidden>사용할 수 없는 닉네임이에요</p>
     <button class="btn primary pulse" id="startBtn">입장하기</button>
   </div>
 </div>
@@ -332,6 +338,19 @@
 
   var GOAL = 30;
   var APPLY_URL = 'https://www.myrealtrip.com';
+
+  // ---------- 닉네임 욕설/성적인 표현 필터 ----------
+  var BAD_WORDS = [
+    '씨발','씨팔','시발','ㅅㅂ','ㅆㅂ','ㅄ','병신','ㅂㅅ','개새끼','개새','새끼',
+    '좆','자지','보지','걸레','창녀','섹스','성교','야동','19금','부랄','찌찌','꼴림',
+    '지랄','미친놈','미친년','썅','에미','애미','니미','좇',
+    'fuck','shit','bitch','asshole','porn','sex','nigger','cock','dick','pussy'
+  ];
+  function hasBadWord(str){
+    var strip = function(s){ return s.toLowerCase().replace(/[^가-힣ㄱ-ㅎㅏ-ㅣa-z0-9]/g, ''); };
+    var norm = strip(str);
+    return BAD_WORDS.some(function(w){ return norm.indexOf(strip(w)) !== -1; });
+  }
   var FALL_SPEED = 320;        // px/초, 낙하 속도
   var SPAWN_MIN = 90, SPAWN_MAX = 160;  // 생성 간격(ms)
   var MEAT_CHANCE = 0.32;      // 고기가 나올 확률
@@ -367,6 +386,7 @@
     startOverlay: document.getElementById('startOverlay'),
     startBtn: document.getElementById('startBtn'),
     nicknameInput: document.getElementById('nicknameInput'),
+    nameError: document.getElementById('nameError'),
     overOverlay: document.getElementById('overOverlay'),
     resultHead: document.getElementById('resultHead'),
     resultTime: document.getElementById('resultTime'),
@@ -777,6 +797,14 @@
   });
   el.startBtn.addEventListener('click', function(){
     var nick = (el.nicknameInput.value || '').trim().slice(0,8) || '익명';
+    if(hasBadWord(nick)){
+      el.nameError.hidden = false;
+      el.nicknameInput.classList.remove('shake');
+      void el.nicknameInput.offsetWidth;
+      el.nicknameInput.classList.add('shake');
+      return;
+    }
+    el.nameError.hidden = true;
     nickname = nick;
     try { localStorage.setItem(NICK_KEY, nick); } catch(e){}
     startGame();
