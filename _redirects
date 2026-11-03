@@ -1,7 +1,4 @@
-# 맨 도메인 접속 시 최종 게임(나뭇잎 러시) 그대로 보여주기 (주소는 짧게 유지)
-/                     /leaf-rush.html   200
-
-# 예전/프로토타입 페이지는 전부 최종 게임으로 영구 리다이렉트
 /index.html           /leaf-rush.html   301
 /island-test.html     /leaf-rush.html   301
 /quokka-explore.html  /leaf-rush.html   301
+/                     /leaf-rush.html   200
