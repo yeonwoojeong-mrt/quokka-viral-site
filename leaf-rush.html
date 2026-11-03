@@ -427,6 +427,12 @@
     if(audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
   }
+  // 컨텍스트가 suspended 상태에서 resume()이 끝나기 전에 소리를 바로 재생시키면
+  // 가끔 소리가 씹히는 문제가 있어, 완전히 running이 된 다음에 재생하도록 보장한다
+  function whenAudioReady(ctx){
+    if(ctx.state === 'running') return Promise.resolve(ctx);
+    return ctx.resume().then(function(){ return ctx; }).catch(function(){ return ctx; });
+  }
   function noiseBurst(ctx, duration, bandFreq, gainVal){
     var bufferSize = Math.max(1, Math.floor(ctx.sampleRate*duration));
     var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
@@ -453,20 +459,24 @@
   function playEatSound(){
     if(!soundOn) return;
     var ctx = getAudioCtx(); if(!ctx) return;
-    noiseBurst(ctx, 0.13, 650 + Math.random()*80, 0.5);
-    setTimeout(function(){ var c = getAudioCtx(); if(c) noiseBurst(c, 0.13, 540 + Math.random()*80, 0.45); }, 100);
+    whenAudioReady(ctx).then(function(){
+      noiseBurst(ctx, 0.13, 650 + Math.random()*80, 0.5);
+      setTimeout(function(){ noiseBurst(ctx, 0.13, 540 + Math.random()*80, 0.45); }, 100);
+    });
   }
   function playMistakeSound(){
     if(!soundOn) return;
     var ctx = getAudioCtx(); if(!ctx) return;
-    var o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = 'square';
-    o.frequency.setValueAtTime(180, ctx.currentTime);
-    o.frequency.exponentialRampToValueAtTime(85, ctx.currentTime + 0.25);
-    g.gain.setValueAtTime(0.2, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.28);
-    o.connect(g); g.connect(ctx.destination);
-    o.start(); o.stop(ctx.currentTime + 0.3);
+    whenAudioReady(ctx).then(function(){
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = 'square';
+      o.frequency.setValueAtTime(180, ctx.currentTime);
+      o.frequency.exponentialRampToValueAtTime(85, ctx.currentTime + 0.25);
+      g.gain.setValueAtTime(0.2, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.28);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(); o.stop(ctx.currentTime + 0.3);
+    });
   }
   el.soundToggle.addEventListener('click', function(){
     soundOn = !soundOn;
