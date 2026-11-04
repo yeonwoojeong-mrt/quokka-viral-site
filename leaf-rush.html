@@ -76,6 +76,7 @@
     position:absolute; left:50%; bottom:4%; transform:translateX(-50%);
     width:min(58vw,280px); aspect-ratio:600/630;
   }
+  .play-area.intro .quokka-wrap{ bottom:34%; width:min(62vw,290px); }
   .quokka-shadow{
     position:absolute; left:50%; bottom:6%; transform:translateX(-50%);
     width:52%; height:11%;
@@ -252,7 +253,7 @@
   </div>
   <div class="timer-badge" id="timerBadge" hidden>0.0초</div>
 
-  <div class="play-area" id="playArea">
+  <div class="play-area intro" id="playArea">
     <div class="quokka-wrap">
       <div class="quokka-shadow"></div>
       <img class="quokka-img" id="quokkaImg" src="assets/quokka-eat-closed.webp" alt="쿼카">
@@ -656,6 +657,7 @@
   function startGame(){
     getAudioCtx(); // iOS 오디오 언락은 반드시 클릭 핸들러 안에서 동기적으로 호출해야 함
     el.nicknameInput.blur();
+    el.playArea.classList.remove('intro');
     paused = false;
     clearItems();
     el.counterNum.textContent = '0';
