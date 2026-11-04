@@ -763,26 +763,17 @@
     });
 
     // 전체 몇 등인지 (5위 밖이어도 본인 등수는 알고 싶다는 요청으로 추가)
-    // leaderboard 뷰는 visitor_id당 최고기록 한 줄만 남기므로, 이번 판 기록이 아니라
-    // 이 닉네임의 현재 최고기록 행(=이미 반영된 내 등수)을 그대로 조회한다
-    function fetchMyRank(attempt){
-      return sbClient.from('leaderboard').select('rank').eq('game', GAME_NAME)
-        .eq('nickname', nickname).order('rank', { ascending:true }).limit(1)
-        .then(function(res){
-          var row = res && res.data && res.data[0];
-          if(!row && attempt < 2){
-            return delay(500).then(function(){ return fetchMyRank(attempt + 1); });
-          }
-          return row;
-        });
-    }
-
+    // 처음엔 "이 닉네임의 현재 최고기록 행"을 찾는 방식으로 했는데, 같은 사람(visitor_id)이
+    // 예전에 다른 닉네임으로 더 빠른 기록을 남긴 적 있으면 leaderboard 뷰엔 그 "예전 닉네임" 행만
+    // 남아있어서 지금 닉네임으로는 영영 못 찾는 문제가 있었음 (닉네임은 고정 식별자가 아님).
+    // 그래서 닉네임 매칭 없이 "이번 기록보다 빠른 기록이 몇 개인가"로 등수를 계산 -
+    // 식별 문제 없이 항상 정확하고, 방금 한 내 insert가 반영됐는지 기다릴 필요도 없음
     insertReq.then(function(){
-      return delay(300);
-    }).then(function(){
-      return fetchMyRank(0);
-    }).then(function(row){
-      el.resultRank.textContent = row ? ('전체 ' + row.rank + '등') : '';
+      return sbClient.from('leaderboard').select('rank', { count:'exact', head:true })
+        .eq('game', GAME_NAME).lt('value', elapsed);
+    }).then(function(res){
+      var rank = (res && typeof res.count === 'number') ? res.count + 1 : null;
+      el.resultRank.textContent = rank ? ('전체 ' + rank + '등') : '';
     }).catch(function(){
       el.resultRank.textContent = '';
     });
