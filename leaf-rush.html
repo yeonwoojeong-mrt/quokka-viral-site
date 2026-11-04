@@ -282,6 +282,14 @@
   </div>
 </div>
 
+<div class="overlay" id="playLimitOverlay" hidden>
+  <div class="card">
+    <p class="result-head">나뭇잎이 다 떨어졌어요!<br>친구에게 공유하면<br>다시 게임을 이어갈 수 있어요!</p>
+    <button class="btn primary pulse" id="unlockShareBtn">친구에게 공유하기</button>
+    <button class="btn secondary" id="unlockApplyBtn">호주여행 응모하기</button>
+  </div>
+</div>
+
 <div class="overlay" id="overOverlay" hidden>
   <div class="card">
     <p class="result-head" id="resultHead">30개 잘 골라 먹였다!</p>
@@ -404,6 +412,9 @@
     goalText: document.getElementById('goalText'),
     goalNext: document.getElementById('goalNext'),
     startOverlay: document.getElementById('startOverlay'),
+    playLimitOverlay: document.getElementById('playLimitOverlay'),
+    unlockShareBtn: document.getElementById('unlockShareBtn'),
+    unlockApplyBtn: document.getElementById('unlockApplyBtn'),
     startBtn: document.getElementById('startBtn'),
     nicknameInput: document.getElementById('nicknameInput'),
     nameError: document.getElementById('nameError'),
@@ -436,6 +447,15 @@
     var savedNick = localStorage.getItem(NICK_KEY);
     if(savedNick) el.nicknameInput.value = savedNick;
   } catch(e){}
+
+  // ---------- 공유해야 더 할 수 있는 플레이 횟수 제한 ----------
+  var PLAY_LIMIT = 3;
+  var PLAYS_KEY = 'mrtLeafRushPlaysUsed';
+  function loadNum(key, fallback){
+    try { var v = localStorage.getItem(key); return v === null ? fallback : parseInt(v,10)||fallback; } catch(e){ return fallback; }
+  }
+  function saveNum(key, val){ try { localStorage.setItem(key, String(val)); } catch(e){} }
+  var playsUsed = loadNum(PLAYS_KEY, 0);
 
   // ---------- 사운드 (합성음) ----------
   var soundOn = true;
@@ -667,6 +687,18 @@
   }
 
   function startGame(){
+    if(playsUsed >= PLAY_LIMIT){
+      el.startOverlay.hidden = true;
+      el.overOverlay.hidden = true;
+      el.playLimitOverlay.hidden = false;
+      return;
+    }
+    playsUsed++;
+    saveNum(PLAYS_KEY, playsUsed);
+    actuallyStartGame();
+  }
+
+  function actuallyStartGame(){
     getAudioCtx(); // iOS 오디오 언락은 반드시 클릭 핸들러 안에서 동기적으로 호출해야 함
     el.nicknameInput.blur();
     el.playArea.classList.add('playing');
@@ -679,6 +711,7 @@
     el.restartBtn.hidden = false;
     el.startOverlay.hidden = true;
     el.overOverlay.hidden = true;
+    el.playLimitOverlay.hidden = true;
     el.leaderboard.innerHTML = '';
     el.mistakeOverlay.hidden = true;
     el.hint.classList.add('hidden');
@@ -917,25 +950,45 @@
     return new File([buf], 'leaf-rush-result.png', { type:'image/png' });
   }
   el.shareBtn.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
-  el.shareBtn.addEventListener('click', function(){
+  function doShare(btnEl, onDone){
     logEvent('share_click');
     var text = shareText();
     var file = null;
     try { file = resultImageFile(); } catch(e){}
     if(file && navigator.canShare && navigator.canShare({ files:[file] })){
-      navigator.share({ text:text, files:[file] }).catch(function(){});
+      navigator.share({ text:text, files:[file] }).catch(function(){}).then(onDone, onDone);
       return;
     }
     if(navigator.share){
-      navigator.share({ text:text }).catch(function(){});
+      navigator.share({ text:text }).catch(function(){}).then(onDone, onDone);
       return;
     }
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(text).then(function(){
-        el.shareBtn.textContent = '복사했어요!';
-        setTimeout(function(){ el.shareBtn.textContent = '공유하기'; }, 1500);
-      }).catch(function(){});
+        var original = btnEl.textContent;
+        btnEl.textContent = '복사했어요!';
+        setTimeout(function(){ btnEl.textContent = original; }, 1500);
+      }).catch(function(){}).then(onDone, onDone);
+      return;
     }
+    if(onDone) onDone();
+  }
+
+  el.shareBtn.addEventListener('click', function(){
+    doShare(el.shareBtn);
+  });
+
+  el.unlockShareBtn.addEventListener('click', function(){
+    doShare(el.unlockShareBtn, function(){
+      playsUsed = 0;
+      saveNum(PLAYS_KEY, playsUsed);
+      actuallyStartGame();
+    });
+  });
+
+  el.unlockApplyBtn.addEventListener('click', function(){
+    logEvent('apply_click');
+    window.open(APPLY_URL, '_blank', 'noopener,noreferrer');
   });
 
   document.addEventListener('keydown', function(e){
