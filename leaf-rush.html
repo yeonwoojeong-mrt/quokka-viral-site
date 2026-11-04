@@ -167,6 +167,7 @@
   .card h1{ font-size:21px; margin:0 0 10px; }
   .card .result-head{ font-size:17px; font-weight:700; margin:0 0 4px; color:var(--accent); }
   .card .result-time{ font-size:44px; font-weight:700; margin:0 0 4px; font-variant-numeric:tabular-nums; }
+  .result-rank{ font-size:14px; font-weight:700; color:var(--ink); opacity:.6; margin-left:4px; vertical-align:middle; }
   .card .result-best{ font-size:14px; font-weight:700; opacity:.7; margin:0 0 10px; }
   .leaderboard{
     list-style:none; margin:0 0 18px; padding:0;
@@ -275,18 +276,10 @@
   </div>
 </div>
 
-<div class="overlay" id="playLimitOverlay" hidden>
-  <div class="card">
-    <p class="result-head">나뭇잎이 다 떨어졌어요!<br>친구에게 공유하면<br>다시 게임을 이어갈 수 있어요!</p>
-    <button class="btn primary pulse" id="unlockShareBtn">친구에게 공유하기</button>
-    <button class="btn secondary" id="unlockApplyBtn">호주여행 응모하기</button>
-  </div>
-</div>
-
 <div class="overlay" id="overOverlay" hidden>
   <div class="card">
     <p class="result-head" id="resultHead">30개 잘 골라 먹였다!</p>
-    <p class="result-time" id="resultTime">0.00초</p>
+    <p class="result-time"><span id="resultTime">0.00초</span><span class="result-rank" id="resultRank"></span></p>
     <p class="result-best" id="resultBest">전체 최고기록 확인 중...</p>
     <ol class="leaderboard" id="leaderboard"></ol>
     <button class="btn primary pulse" id="applyBtn">호주 공짜여행 응모하기</button>
@@ -407,15 +400,13 @@
     goalText: document.getElementById('goalText'),
     goalNext: document.getElementById('goalNext'),
     startOverlay: document.getElementById('startOverlay'),
-    playLimitOverlay: document.getElementById('playLimitOverlay'),
-    unlockShareBtn: document.getElementById('unlockShareBtn'),
-    unlockApplyBtn: document.getElementById('unlockApplyBtn'),
     startBtn: document.getElementById('startBtn'),
     nicknameInput: document.getElementById('nicknameInput'),
     nameError: document.getElementById('nameError'),
     overOverlay: document.getElementById('overOverlay'),
     resultHead: document.getElementById('resultHead'),
     resultTime: document.getElementById('resultTime'),
+    resultRank: document.getElementById('resultRank'),
     resultBest: document.getElementById('resultBest'),
     leaderboard: document.getElementById('leaderboard'),
     applyBtn: document.getElementById('applyBtn'),
@@ -443,14 +434,14 @@
     if(savedNick) el.nicknameInput.value = savedNick;
   } catch(e){}
 
-  // ---------- 공유해야 더 할 수 있는 플레이 횟수 제한 ----------
-  var PLAY_LIMIT = 3;
-  var PLAYS_KEY = 'mrtLeafRushPlaysUsed';
-  function loadNum(key, fallback){
-    try { var v = localStorage.getItem(key); return v === null ? fallback : parseInt(v,10)||fallback; } catch(e){ return fallback; }
-  }
-  function saveNum(key, val){ try { localStorage.setItem(key, String(val)); } catch(e){} }
-  var playsUsed = loadNum(PLAYS_KEY, 0);
+  // leaderboard 뷰는 visitor_id당 최고기록 한 줄만 남기므로(distinct on),
+  // "이번 판" 기록이 아니라 "내 최고기록"으로 조회해야 등수가 항상 뜸
+  var MY_BEST_KEY = 'mrtGameMyBest_' + GAME_NAME;
+  var myBest = null;
+  try {
+    var savedBest = parseFloat(localStorage.getItem(MY_BEST_KEY));
+    if(!isNaN(savedBest)) myBest = savedBest;
+  } catch(e){}
 
   // ---------- 사운드 (합성음) ----------
   var soundOn = true;
@@ -557,8 +548,16 @@
     return bag.pop();
   }
 
+  // 매 프레임/매 스폰마다 getBoundingClientRect()를 부르면 그때마다 강제 동기 레이아웃이 발생해서
+  // 게임 시작 직후(요소가 한꺼번에 여러 개 바뀌는 시점)에 렌더링이 순간적으로 밀리는 원인이 될 수 있어
+  // 라운드 시작 시점과 리사이즈 때만 다시 계산해서 캐시해둔다
+  var playAreaRect = null;
+  function refreshPlayAreaRect(){ playAreaRect = el.playArea.getBoundingClientRect(); }
+  window.addEventListener('resize', refreshPlayAreaRect);
+  window.addEventListener('orientationchange', refreshPlayAreaRect);
+
   function spawnItem(){
-    var r = el.playArea.getBoundingClientRect();
+    var r = playAreaRect || (playAreaRect = el.playArea.getBoundingClientRect());
     if(r.width < ITEM_MARGIN * 2 + 10) return;
     var type = nextType();
     var wrap = document.createElement('div');
@@ -637,7 +636,7 @@
         nextSpawnGap = SPAWN_MIN + Math.random() * (SPAWN_MAX - SPAWN_MIN);
         spawnItem();
       }
-      var r = el.playArea.getBoundingClientRect();
+      var r = playAreaRect || (playAreaRect = el.playArea.getBoundingClientRect());
       for(var i = items.length - 1; i >= 0; i--){
         var it = items[i];
         if(it.grabbed) continue;
@@ -674,7 +673,9 @@
       } else {
         setTimeout(function(){
           el.countdown.hidden = true;
-          onDone();
+          // setTimeout은 rAF 타이밍과 어긋날 수 있어, 다음 애니메이션 프레임에 맞춰 시작해야
+          // 첫 나뭇잎이 바로 보이지 않고 늦게 나타나는 현상을 줄일 수 있음
+          requestAnimationFrame(onDone);
         }, 500);
       }
     }
@@ -682,18 +683,6 @@
   }
 
   function startGame(){
-    if(playsUsed >= PLAY_LIMIT){
-      el.startOverlay.hidden = true;
-      el.overOverlay.hidden = true;
-      el.playLimitOverlay.hidden = false;
-      return;
-    }
-    playsUsed++;
-    saveNum(PLAYS_KEY, playsUsed);
-    actuallyStartGame();
-  }
-
-  function actuallyStartGame(){
     getAudioCtx(); // iOS 오디오 언락은 반드시 클릭 핸들러 안에서 동기적으로 호출해야 함
     el.nicknameInput.blur();
     el.playArea.classList.add('playing');
@@ -706,7 +695,6 @@
     el.restartBtn.hidden = false;
     el.startOverlay.hidden = true;
     el.overOverlay.hidden = true;
-    el.playLimitOverlay.hidden = true;
     el.leaderboard.innerHTML = '';
     el.mistakeOverlay.hidden = true;
     el.hint.classList.add('hidden');
@@ -721,6 +709,7 @@
     spawnAcc = 0; nextSpawnGap = SPAWN_MIN; lastTime = 0;
     bag = [];
     clearItems();
+    refreshPlayAreaRect();
     for(var i = 0; i < 3; i++) spawnItem();
     updateCounter();
     el.hint.classList.remove('hidden');
@@ -729,8 +718,13 @@
   function finishGame(){
     state = 'over';
     elapsed = (performance.now() - t0) / 1000;
+    if(myBest == null || elapsed < myBest){
+      myBest = elapsed;
+      try { localStorage.setItem(MY_BEST_KEY, String(myBest)); } catch(e){}
+    }
     clearItems();
     el.resultTime.textContent = elapsed.toFixed(2) + '초';
+    el.resultRank.textContent = '';
     el.resultBest.textContent = '전체 최고기록 확인 중...';
     el.resultBest.classList.remove('new');
     el.overOverlay.hidden = false;
@@ -779,6 +773,31 @@
       renderLeaderboard(rows);
     }).catch(function(){
       el.leaderboard.innerHTML = '';
+    });
+
+    // 전체 몇 등인지 (5위 밖이어도 본인 등수는 알고 싶다는 요청으로 추가)
+    // leaderboard 뷰는 visitor_id당 최고기록 한 줄만 남기므로 이번 판 기록(elapsed)이 아니라
+    // 내 최고기록(myBest) 기준으로 조회해야 PB가 아닌 판에도 등수가 뜸
+    function fetchMyRank(attempt){
+      return sbClient.from('leaderboard').select('rank').eq('game', GAME_NAME)
+        .eq('nickname', nickname).gte('value', myBest - 0.005).lte('value', myBest + 0.005).limit(1)
+        .then(function(res){
+          var row = res && res.data && res.data[0];
+          if(!row && attempt < 2){
+            return delay(500).then(function(){ return fetchMyRank(attempt + 1); });
+          }
+          return row;
+        });
+    }
+
+    insertReq.then(function(){
+      return delay(300);
+    }).then(function(){
+      return fetchMyRank(0);
+    }).then(function(row){
+      el.resultRank.textContent = row ? ('전체 ' + row.rank + '등') : '';
+    }).catch(function(){
+      el.resultRank.textContent = '';
     });
   }
 
@@ -945,77 +964,25 @@
     return new File([buf], 'leaf-rush-result.png', { type:'image/png' });
   }
   el.shareBtn.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
-  // onDone(shared)에서 shared=true는 "navigator.share가 성공적으로 끝났다"는 확실한 신호,
-  // false/undefined는 "시트를 취소했거나 클립보드로만 복사됨" 같은 불확실한 경우
-  function doShare(btnEl, onDone){
+  el.shareBtn.addEventListener('click', function(){
     logEvent('share_click');
     var text = shareText();
     var file = null;
     try { file = resultImageFile(); } catch(e){}
     if(file && navigator.canShare && navigator.canShare({ files:[file] })){
-      navigator.share({ text:text, files:[file] }).then(function(){ if(onDone) onDone(true); }, function(){ if(onDone) onDone(false); });
+      navigator.share({ text:text, files:[file] }).catch(function(){});
       return;
     }
     if(navigator.share){
-      navigator.share({ text:text }).then(function(){ if(onDone) onDone(true); }, function(){ if(onDone) onDone(false); });
+      navigator.share({ text:text }).catch(function(){});
       return;
     }
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(text).then(function(){
-        var original = btnEl.textContent;
-        btnEl.textContent = '복사했어요!';
-        setTimeout(function(){ btnEl.textContent = original; }, 1500);
-        if(onDone) onDone(false);
-      }).catch(function(){ if(onDone) onDone(false); });
-      return;
+        el.shareBtn.textContent = '복사했어요!';
+        setTimeout(function(){ el.shareBtn.textContent = '공유하기'; }, 1500);
+      }).catch(function(){});
     }
-    if(onDone) onDone(false);
-  }
-
-  el.shareBtn.addEventListener('click', function(){
-    doShare(el.shareBtn);
-  });
-
-  // ---------- 공유 후 기회 잠금해제 ----------
-  // "진짜 보냈는지"는 웹에서 확인할 방법이 없어서(카톡 내부 일이라), 공유 시도 후
-  // 앱을 벗어났다가 돌아오면 공유한 걸로 간주한다 - 애매하면 풀어주는 쪽으로 설계
-  // (공유했는데 안 한 걸로 떠서 못 하는 상황이 생기면 안 되니까)
-  var unlockPending = false, unlockLeftPage = false, unlockTimer = null;
-  function armUnlockWatch(){
-    unlockPending = true;
-    unlockLeftPage = false;
-    clearTimeout(unlockTimer);
-    unlockTimer = setTimeout(function(){ unlockPending = false; unlockLeftPage = false; }, 3 * 60 * 1000);
-  }
-  function completeUnlock(){
-    if(!unlockPending) return;
-    unlockPending = false;
-    unlockLeftPage = false;
-    clearTimeout(unlockTimer);
-    playsUsed = 0;
-    saveNum(PLAYS_KEY, playsUsed);
-    actuallyStartGame();
-  }
-  document.addEventListener('visibilitychange', function(){
-    if(!unlockPending) return;
-    if(document.visibilityState === 'hidden'){
-      unlockLeftPage = true;
-    } else if(document.visibilityState === 'visible' && unlockLeftPage){
-      completeUnlock();
-    }
-  });
-
-  el.unlockShareBtn.addEventListener('click', function(){
-    armUnlockWatch();
-    doShare(el.unlockShareBtn, function(shared){
-      if(shared) completeUnlock(); // 공유 성공이 확실하면 바로 풀어줌
-      // 아니면 위에서 켜둔 visibilitychange 감지가 처리
-    });
-  });
-
-  el.unlockApplyBtn.addEventListener('click', function(){
-    logEvent('apply_click');
-    window.open(APPLY_URL, '_blank', 'noopener,noreferrer');
   });
 
   document.addEventListener('keydown', function(e){
