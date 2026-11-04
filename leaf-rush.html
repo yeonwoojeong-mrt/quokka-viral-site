@@ -82,7 +82,9 @@
     width:52%; height:11%;
     background:radial-gradient(ellipse at center, rgba(20,15,10,.4) 0%, rgba(20,15,10,.22) 55%, rgba(20,15,10,0) 80%);
     pointer-events:none;
+    opacity:0;
   }
+  .play-area.playing .quokka-shadow{ opacity:1; }
   .quokka-img{ width:100%; height:100%; object-fit:contain; display:block; transform-origin:50% 70%; }
   .quokka-img.chomp{ animation:chomp .22s ease; }
   @keyframes chomp{
