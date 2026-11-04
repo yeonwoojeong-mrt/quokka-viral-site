@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>쿼카 밥주기 게임</title>
 <meta property="og:title" content="쿼카 밥주기 게임">
 <meta property="og:description" content="쿼카한테 나뭇잎 콕콕 먹여주고 호주 여행 응모해보세요!">
@@ -25,7 +25,7 @@
     --font-display:'Ongeulip','Malgun Gothic',sans-serif;
   }
   [hidden]{ display:none!important; }
-  html,body{ height:100%; }
+  html,body{ height:100%; touch-action:manipulation; }
   body{
     margin:0; font-family:var(--font-display); color:var(--ink);
     background:#1b1330; overflow:hidden; touch-action:manipulation;
@@ -308,6 +308,18 @@
 <script>
 (function(){
   'use strict';
+
+  // ---------- 더블탭/핀치 확대 방지 ----------
+  // 빠르게 연속으로 나뭇잎을 터치하다 보면 iOS Safari가 이걸 더블탭으로 인식해서
+  // viewport 메타태그만으로는 안 막히고 화면이 확대되는 경우가 있어 JS로 한 번 더 막는다
+  var lastTouchEnd = 0;
+  document.addEventListener('touchend', function(e){
+    var now = Date.now();
+    if(now - lastTouchEnd <= 350) e.preventDefault();
+    lastTouchEnd = now;
+  }, { passive:false });
+  document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
+  document.addEventListener('dblclick', function(e){ e.preventDefault(); });
 
   // ---------- 성과 트래킹 (Supabase) ----------
   var SUPABASE_URL = 'https://anpikmfeszdpghkbntft.supabase.co';
