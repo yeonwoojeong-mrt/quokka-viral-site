@@ -323,7 +323,9 @@
   var lastTouchEnd = 0;
   document.addEventListener('touchend', function(e){
     var now = Date.now();
-    if(now - lastTouchEnd <= 350) e.preventDefault();
+    // 버튼류는 연타해서 눌러야 할 때가 있어(실수 팝업 닫기 등) 더블탭 방지 대상에서 제외
+    var onControl = e.target.closest && e.target.closest('button, .btn, a, input, .close-x');
+    if(!onControl && now - lastTouchEnd <= 350) e.preventDefault();
     lastTouchEnd = now;
   }, { passive:false });
   document.addEventListener('gesturestart', function(e){ e.preventDefault(); });
