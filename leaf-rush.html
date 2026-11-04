@@ -434,15 +434,6 @@
     if(savedNick) el.nicknameInput.value = savedNick;
   } catch(e){}
 
-  // leaderboard 뷰는 visitor_id당 최고기록 한 줄만 남기므로(distinct on),
-  // "이번 판" 기록이 아니라 "내 최고기록"으로 조회해야 등수가 항상 뜸
-  var MY_BEST_KEY = 'mrtGameMyBest_' + GAME_NAME;
-  var myBest = null;
-  try {
-    var savedBest = parseFloat(localStorage.getItem(MY_BEST_KEY));
-    if(!isNaN(savedBest)) myBest = savedBest;
-  } catch(e){}
-
   // ---------- 사운드 (합성음) ----------
   var soundOn = true;
   var audioCtx = null;
@@ -718,10 +709,6 @@
   function finishGame(){
     state = 'over';
     elapsed = (performance.now() - t0) / 1000;
-    if(myBest == null || elapsed < myBest){
-      myBest = elapsed;
-      try { localStorage.setItem(MY_BEST_KEY, String(myBest)); } catch(e){}
-    }
     clearItems();
     el.resultTime.textContent = elapsed.toFixed(2) + '초';
     el.resultRank.textContent = '';
@@ -776,11 +763,11 @@
     });
 
     // 전체 몇 등인지 (5위 밖이어도 본인 등수는 알고 싶다는 요청으로 추가)
-    // leaderboard 뷰는 visitor_id당 최고기록 한 줄만 남기므로 이번 판 기록(elapsed)이 아니라
-    // 내 최고기록(myBest) 기준으로 조회해야 PB가 아닌 판에도 등수가 뜸
+    // leaderboard 뷰는 visitor_id당 최고기록 한 줄만 남기므로, 이번 판 기록이 아니라
+    // 이 닉네임의 현재 최고기록 행(=이미 반영된 내 등수)을 그대로 조회한다
     function fetchMyRank(attempt){
       return sbClient.from('leaderboard').select('rank').eq('game', GAME_NAME)
-        .eq('nickname', nickname).gte('value', myBest - 0.005).lte('value', myBest + 0.005).limit(1)
+        .eq('nickname', nickname).order('rank', { ascending:true }).limit(1)
         .then(function(res){
           var row = res && res.data && res.data[0];
           if(!row && attempt < 2){
