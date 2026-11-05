@@ -677,6 +677,10 @@
     getAudioCtx(); // iOS 오디오 언락은 반드시 클릭 핸들러 안에서 동기적으로 호출해야 함
     el.nicknameInput.blur();
     el.playArea.classList.add('playing');
+    // 게임 중(↻ 버튼은 플레이 중에도 눌림)에 다시시작하면, 카운트다운 도는 동안
+    // state가 아직 'playing'으로 남아있어서 메인 루프가 이전 라운드의 t0로 타이머를
+    // 계속 갱신해버려 방금 0.0초로 리셋한 게 다시 흘러가는 것처럼 보이는 문제가 있었음
+    state = 'idle';
     paused = false;
     clearItems();
     el.counterNum.textContent = '0';
