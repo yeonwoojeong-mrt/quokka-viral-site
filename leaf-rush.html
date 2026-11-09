@@ -341,7 +341,14 @@
       return sbClient.from('events').insert(row);
     } catch(e){ return null; }
   }
-  logEvent('visit');
+  // logEvent()가 돌려주는 건 lazy thenable이라, .then()을 걸어주지 않으면
+  // 실제 네트워크 요청이 전혀 안 나감 (game_complete처럼 결과를 더 써야 하는 경우는
+  // 호출부에서 직접 체이닝하고, 결과가 필요 없는 "그냥 기록만" 하는 이벤트는 이걸로 쏨)
+  function fireEvent(eventType, value){
+    var req = logEvent(eventType, value);
+    if(req) req.then(function(){}, function(){});
+  }
+  fireEvent('visit');
 
   function fetchGlobalBest(){
     if(!sbClient) return;
@@ -697,7 +704,7 @@
   }
 
   function beginPlay(){
-    logEvent('game_start');
+    fireEvent('game_start');
     state = 'playing';
     t0 = performance.now();
     count = 0; elapsed = 0;
@@ -871,7 +878,7 @@
   el.restartBtn.addEventListener('click', startGame);
   el.retryBtn.addEventListener('click', startGame);
   el.applyBtn.addEventListener('click', function(){
-    logEvent('apply_click');
+    fireEvent('apply_click');
     window.open(APPLY_URL, '_blank', 'noopener,noreferrer');
   });
 
@@ -947,7 +954,7 @@
   }
   el.shareBtn.addEventListener('pointerdown', function(e){ e.stopPropagation(); });
   el.shareBtn.addEventListener('click', function(){
-    logEvent('share_click');
+    fireEvent('share_click');
     var text = shareText();
     var file = null;
     try { file = resultImageFile(); } catch(e){}
